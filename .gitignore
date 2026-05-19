@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Environment variables — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+.next/
+npm-debug.log*
+
+# Data files — large PDFs not needed in repo
+backend/data/documents/
+
+# OS
+.DS_Store
+*.swp
