@@ -251,8 +251,8 @@ export default function InputSection({ onProcess, onProcessMulti, isLoading, onL
       setUploadError(err.message ?? "Failed to parse PDF file.");
     } finally {
       setUploadBusy(false);
-      // Turn off overall loading since we loaded into editor mode
-      onProcess({ type: "structured", payload: { role: "", responsibilities: [], inherent_risks: [], domain: "" } });
+      // Turn off overall loading since we loaded into editor mode (or errored)
+      onLoadingStart("");
     }
   };
 
