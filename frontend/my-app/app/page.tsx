@@ -294,7 +294,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col flex-1 items-center justify-start bg-zinc-50 font-sans dark:bg-black py-8 px-6 min-h-screen">
-      <main className="flex flex-1 w-full max-w-5xl flex-col items-stretch gap-8">
+      <main className="flex flex-1 w-full max-w-none flex-col items-stretch gap-8 px-2 md:px-6">
 
         {/* Header */}
         <header className="flex items-center justify-between">
@@ -319,7 +319,7 @@ export default function Home() {
 
         {/* ── Input screen ─────────────────────────────────────────────────── */}
         {!plan ? (
-          <section className="flex flex-col items-center gap-6 mt-8 w-full max-w-2xl mx-auto">
+          <section className="flex flex-col items-center gap-6 mt-8 w-full max-w-7xl mx-auto">
             <InputSection
               onProcess={handleProcess}
               isLoading={isLoading}
@@ -374,7 +374,7 @@ export default function Home() {
         ) : (
         /* ── Plan view ────────────────────────────────────────────────────── */
           <section className="flex flex-col items-center justify-center py-8">
-            <div className="w-full max-w-6xl space-y-6">
+            <div className="w-full max-w-none space-y-6 px-2 md:px-6">
 
               {/* Title */}
               <div className="text-center mb-8">
