@@ -23,6 +23,30 @@ interface PresetRole {
   risks: string[];
 }
 
+// Map role names to beautiful emojis for premium cards
+const getRoleIcon = (roleName: string) => {
+  const name = roleName.toLowerCase();
+  if (name.includes("kyc")) return "👤";
+  if (name.includes("compliance")) return "🛡️";
+  if (name.includes("mlro")) return "💼";
+  if (name.includes("investigator")) return "🔍";
+  if (name.includes("manager") || name.includes("relationship")) return "🤝";
+  if (name.includes("senior") || name.includes("management")) return "🏛️";
+  return "⚙️";
+};
+
+// Map role names to beautiful brand colors for card borders
+const getRoleColorClass = (roleName: string) => {
+  const name = roleName.toLowerCase();
+  if (name.includes("kyc")) return "hover:border-emerald-500 dark:hover:border-emerald-700 hover:shadow-emerald-500/10";
+  if (name.includes("compliance")) return "hover:border-blue-500 dark:hover:border-blue-700 hover:shadow-blue-500/10";
+  if (name.includes("mlro")) return "hover:border-purple-500 dark:hover:border-purple-700 hover:shadow-purple-500/10";
+  if (name.includes("investigator")) return "hover:border-amber-500 dark:hover:border-amber-700 hover:shadow-amber-500/10";
+  if (name.includes("manager") || name.includes("relationship")) return "hover:border-teal-500 dark:hover:border-teal-700 hover:shadow-teal-500/10";
+  if (name.includes("senior") || name.includes("management")) return "hover:border-rose-500 dark:hover:border-rose-700 hover:shadow-rose-500/10";
+  return "hover:border-zinc-500 dark:hover:border-zinc-700 hover:shadow-zinc-500/10";
+};
+
 export default function InputSection({ onProcess, isLoading, onLoadingStart }: Props) {
   // Modes: "select" (selection screen), "editor" (structured editing), "extract" (paste text screen)
   const [mode, setMode] = useState<"select" | "editor" | "extract">("select");
@@ -44,6 +68,22 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
   // Add input states
   const [newResponsibility, setNewResponsibility] = useState("");
   const [newRisk, setNewRisk] = useState("");
+
+  // Quick Description Samples
+  const SAMPLES = [
+    {
+      label: "👤 KYC Analyst",
+      text: "KYC Analyst responsible for customer onboarding, identity verification, beneficial ownership checks, PEP screening, and ongoing CDD reviews. Key risks include identity fraud, shell company money laundering, and sanctions evasion."
+    },
+    {
+      label: "🔍 AML Investigator",
+      text: "AML Investigator tasked with suspicious transaction investigations, alert triage and review, case management, and sanctions review. Key risks include false negatives, failure to report suspicious transactions, and case documentation gaps."
+    },
+    {
+      label: "🏛️ Senior Management",
+      text: "Senior Management responsible for AML governance oversight, setting the firm's risk appetite, and training programme oversight. Key risks include regulatory breaches, lack of strategic risk alignment, and undertrained staff."
+    }
+  ];
 
   // Fetch preset roles on mount
   useEffect(() => {
@@ -75,7 +115,7 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
 
   // Handler for starting a custom role from scratch
   const handleCreateCustom = () => {
-    setRoleName("Custom Role");
+    setRoleName("Custom Compliance Role");
     setResponsibilities(["Establish internal AML controls"]);
     setRisks(["Money Laundering Risk"]);
     setMode("editor");
@@ -187,60 +227,72 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
     <div className="w-full space-y-6">
       {/* ── MODE 1: SELECTION SCREEN ────────────────────────────────────────── */}
       {mode === "select" && (
-        <div className="space-y-6 animate-fadeIn">
-          <div className="text-center space-y-1.5">
-            <h3 className="text-xl font-bold tracking-tight">Step 1: Choose or Create a Compliance Role</h3>
-            <p className="text-sm text-muted-foreground">
-              Select an AML governance role seeded from Neo4j, write a custom one, or extract one from a text description.
+        <div className="space-y-8 animate-fadeIn">
+          <div className="text-center space-y-2 max-w-xl mx-auto">
+            <h3 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Step 1: Define Your Compliance Role</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Create a training plan mapped to real EU AMLR regulations. Select a seeded role, start a custom one, or paste a job description.
             </p>
           </div>
 
           {/* Core options grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-5">
             <div 
               onClick={handleCreateCustom}
-              className="flex flex-col items-center justify-center p-6 bg-white dark:bg-zinc-900 border rounded-2xl cursor-pointer hover:border-blue-500 hover:shadow-md transition-all group text-center space-y-2 h-[140px]"
+              className="flex items-start gap-4 p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl cursor-pointer hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/5 transition-all group h-[120px]"
             >
-              <div className="text-2xl group-hover:scale-110 transition-transform">➕</div>
-              <div>
-                <h4 className="font-semibold text-sm group-hover:text-blue-500 transition-colors">Create Custom Role</h4>
-                <p className="text-xs text-muted-foreground mt-1">Define responsibilities and risks manually</p>
+              <div className="text-3xl bg-blue-50 dark:bg-blue-950/40 w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">➕</div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-100 group-hover:text-blue-500 transition-colors">Create Custom Role</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">Manually list your own specific role, responsibilities, and risk factors</p>
               </div>
             </div>
 
             <div 
               onClick={() => setMode("extract")}
-              className="flex flex-col items-center justify-center p-6 bg-white dark:bg-zinc-900 border rounded-2xl cursor-pointer hover:border-blue-500 hover:shadow-md transition-all group text-center space-y-2 h-[140px]"
+              className="flex items-start gap-4 p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl cursor-pointer hover:border-violet-500 hover:shadow-lg hover:shadow-violet-500/5 transition-all group h-[120px]"
             >
-              <div className="text-2xl group-hover:scale-110 transition-transform">📄</div>
-              <div>
-                <h4 className="font-semibold text-sm group-hover:text-blue-500 transition-colors">Extract From Job Description</h4>
-                <p className="text-xs text-muted-foreground mt-1">Paste description and edit the extracted outline</p>
+              <div className="text-3xl bg-violet-50 dark:bg-violet-950/40 w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">📄</div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-100 group-hover:text-violet-500 transition-colors">Extract From Job Description</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">Paste free-form text or PDF context to extract the structure automatically</p>
               </div>
             </div>
           </div>
 
           {/* Seeded Roles section */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Preset EU AMLR Roles (Neo4j Seeded)</h4>
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">EU AMLR Seeded Roles (Live from Neo4j)</h4>
+              <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-semibold border border-emerald-100 dark:border-emerald-900/20">Idempotent Merge</span>
+            </div>
             
             {presetsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+              <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                <span className="text-xs text-muted-foreground">Traversing governance graph...</span>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-4">
                 {presets.map((p) => (
                   <div
                     key={p.role}
                     onClick={() => handleSelectPreset(p)}
-                    className="p-4 bg-white dark:bg-zinc-900 border rounded-xl cursor-pointer hover:border-primary hover:bg-muted/10 transition-all space-y-2"
+                    className={`flex flex-col justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl cursor-pointer shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 ${getRoleColorClass(p.role)}`}
                   >
-                    <div className="font-medium text-xs truncate text-primary uppercase tracking-wide">AMLR Role</div>
-                    <div className="font-semibold text-sm text-foreground">{p.role}</div>
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1.5 border-t">
-                      <span>Resp: {p.responsibilities.length}</span>
-                      <span>Risks: {p.risks.length}</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[28px]">{getRoleIcon(p.role)}</span>
+                        <span className="text-[9px] font-mono font-bold uppercase bg-muted px-2 py-0.5 rounded text-muted-foreground">Preset</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <h5 className="font-bold text-sm text-zinc-800 dark:text-zinc-100 leading-snug line-clamp-1">{p.role}</h5>
+                        <p className="text-[10px] text-muted-foreground">EU Regulation Grounded</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-zinc-500 font-semibold pt-3 mt-4 border-t border-zinc-100 dark:border-zinc-800">
+                      <span className="flex items-center gap-1">📋 {p.responsibilities.length} Resp</span>
+                      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">🚨 {p.risks.length} Risks</span>
                     </div>
                   </div>
                 ))}
@@ -252,33 +304,56 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
 
       {/* ── MODE 2: TEXT EXTRACTION SCREEN ──────────────────────────────────── */}
       {mode === "extract" && (
-        <div className="space-y-4 animate-fadeIn">
-          <div className="flex items-center justify-between">
+        <div className="space-y-5 animate-fadeIn">
+          <div className="flex items-center justify-between border-b pb-3">
             <div>
-              <h3 className="text-lg font-semibold">Extract Role from Description</h3>
-              <p className="text-xs text-muted-foreground">Paste custom responsibilities/risks and review them inside our editor.</p>
+              <h3 className="text-lg font-bold">Extract Role Outline</h3>
+              <p className="text-xs text-muted-foreground">Our AI extracts the core responsibilities and risks for review.</p>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setMode("select")}>
+            <Button variant="ghost" size="sm" onClick={() => setMode("select")} className="text-xs">
               ← Back to Roles
             </Button>
           </div>
 
-          <textarea
-            value={text}
-            onChange={(e) => { setText(e.target.value); setExtractionError(""); }}
-            placeholder={`Paste job description here...\n\nExample:\nWe are looking for a KYC Analyst to handle high-risk client onboarding, verification of UBO registries, and politically exposed persons (PEPs) checks. Primary risks are nominee ownership structures, PEP corruption, and sanctions avoidance.`}
-            className="w-full min-h-[180px] rounded-lg border border-input bg-background p-4 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 resize-none disabled:opacity-50"
-            disabled={isBusy}
-          />
+          <div className="space-y-2">
+            <textarea
+              value={text}
+              onChange={(e) => { setText(e.target.value); setExtractionError(""); }}
+              placeholder="Paste text description here..."
+              className="w-full min-h-[220px] rounded-xl border border-zinc-200 dark:border-zinc-800 bg-background p-4 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-none disabled:opacity-50 font-sans leading-relaxed"
+              disabled={isBusy}
+            />
+
+            {/* Quick click samples */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Quick Test Samples:</span>
+              <div className="flex items-center gap-2">
+                {SAMPLES.map((s) => (
+                  <button
+                    key={s.label}
+                    onClick={() => { setText(s.text); setExtractionError(""); }}
+                    className="text-xs bg-muted hover:bg-primary hover:text-white dark:hover:text-black px-3 py-1.5 rounded-full transition-all text-zinc-600 dark:text-zinc-300 font-medium"
+                    disabled={isBusy}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {extractionError && <p className="text-sm text-destructive">{extractionError}</p>}
 
-          <div className="flex justify-between items-center pt-2">
+          <div className="flex justify-between items-center pt-2 border-t">
             <Button variant="outline" onClick={() => setMode("select")} disabled={isBusy}>
               Cancel
             </Button>
-            <Button onClick={handleExtractText} disabled={isBusy || !text.trim()}>
-              {extractionBusy ? "Extracting..." : "Parse & Edit Role Details →"}
+            <Button 
+              onClick={handleExtractText} 
+              disabled={isBusy || !text.trim()} 
+              className="bg-violet-600 hover:bg-violet-700 text-white dark:text-zinc-50 shadow-md shadow-violet-500/10"
+            >
+              {extractionBusy ? "Processing Description..." : "AI Parse & Load to Editor →"}
             </Button>
           </div>
         </div>
@@ -309,11 +384,12 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
           <div className="grid grid-cols-2 gap-6">
             
             {/* 1. Responsibilities Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4 bg-white dark:bg-zinc-950 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-900/60 shadow-sm flex flex-col h-[520px]">
+              <div className="flex items-center gap-2 border-b pb-3">
+                <span className="text-xl">📋</span>
                 <div>
-                  <h4 className="font-semibold text-sm">Key Responsibilities ({responsibilities.length})</h4>
-                  <p className="text-[10px] text-muted-foreground">What actions does this role perform?</p>
+                  <h4 className="font-bold text-sm">Key Responsibilities ({responsibilities.length})</h4>
+                  <p className="text-[10px] text-muted-foreground">What compliance functions are assigned?</p>
                 </div>
               </div>
 
@@ -323,33 +399,34 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
                   type="text"
                   value={newResponsibility}
                   onChange={(e) => setNewResponsibility(e.target.value)}
-                  placeholder="e.g. Conduct enhanced due diligence on PEPs"
-                  className="flex-1 rounded-md border border-input bg-transparent px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Add custom responsibility..."
+                  className="flex-1 rounded-lg border border-input bg-transparent px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
                   onKeyDown={(e) => e.key === "Enter" && addResponsibility()}
                   disabled={isBusy}
                 />
-                <Button size="sm" variant="secondary" onClick={addResponsibility} disabled={isBusy}>
-                  Add
+                <Button size="sm" onClick={addResponsibility} disabled={isBusy}>
+                  Add ➕
                 </Button>
               </div>
 
               {/* Responsibilities List */}
-              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+              <div className="flex-1 overflow-y-auto pr-1 space-y-2.5">
                 {responsibilities.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic text-center py-4">No responsibilities added. Add one above.</p>
+                  <p className="text-xs text-muted-foreground italic text-center py-12">No responsibilities added. Write one above to start.</p>
                 ) : (
                   responsibilities.map((resp, idx) => (
-                    <div key={idx} className="group flex items-start gap-2 bg-white dark:bg-zinc-900 border rounded-lg p-2.5 shadow-sm">
-                      <input
-                        type="text"
+                    <div key={idx} className="group flex items-start gap-2 bg-zinc-50/50 dark:bg-zinc-900/40 border border-zinc-100 dark:border-zinc-800/40 rounded-xl p-3 shadow-sm hover:border-zinc-200 dark:hover:border-zinc-700 transition-colors animate-fadeIn">
+                      <span className="mt-0.5 text-zinc-400 shrink-0 text-xs font-mono font-bold">#{idx + 1}</span>
+                      <textarea
+                        rows={1}
                         value={resp}
                         onChange={(e) => editResponsibility(idx, e.target.value)}
-                        className="flex-1 text-xs bg-transparent border-none focus:outline-none focus:ring-0 leading-relaxed resize-none p-0 font-medium"
+                        className="flex-1 text-xs bg-transparent border-none focus:outline-none focus:ring-0 leading-relaxed font-semibold resize-none p-0 h-auto overflow-hidden focus:text-primary transition-colors"
                         disabled={isBusy}
                       />
                       <button
                         onClick={() => removeResponsibility(idx)}
-                        className="text-muted-foreground hover:text-destructive opacity-40 group-hover:opacity-100 transition-opacity text-xs"
+                        className="text-zinc-400 hover:text-destructive opacity-30 group-hover:opacity-100 transition-opacity text-sm leading-none shrink-0"
                         disabled={isBusy}
                         title="Delete"
                       >
@@ -362,11 +439,12 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
             </div>
 
             {/* 2. Inherent Risks Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4 bg-white dark:bg-zinc-950 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-900/60 shadow-sm flex flex-col h-[520px]">
+              <div className="flex items-center gap-2 border-b pb-3">
+                <span className="text-xl">🚨</span>
                 <div>
-                  <h4 className="font-semibold text-sm text-amber-600 dark:text-amber-500">Inherent AML Risks ({risks.length})</h4>
-                  <p className="text-[10px] text-muted-foreground">What money laundering/compliance risks apply?</p>
+                  <h4 className="font-bold text-sm text-amber-600 dark:text-amber-500">Inherent AML Risks ({risks.length})</h4>
+                  <p className="text-[10px] text-muted-foreground">What money laundering risks must be managed?</p>
                 </div>
               </div>
 
@@ -376,33 +454,34 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
                   type="text"
                   value={newRisk}
                   onChange={(e) => setNewRisk(e.target.value)}
-                  placeholder="e.g. Sanctions evasion or PEP corruption"
-                  className="flex-1 rounded-md border border-input bg-transparent px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Add custom compliance risk..."
+                  className="flex-1 rounded-lg border border-input bg-transparent px-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
                   onKeyDown={(e) => e.key === "Enter" && addRisk()}
                   disabled={isBusy}
                 />
-                <Button size="sm" variant="secondary" onClick={addRisk} disabled={isBusy}>
-                  Add
+                <Button size="sm" onClick={addRisk} disabled={isBusy}>
+                  Add ➕
                 </Button>
               </div>
 
               {/* Risks List */}
-              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+              <div className="flex-1 overflow-y-auto pr-1 space-y-2.5">
                 {risks.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic text-center py-4">No inherent risks added. Add one above.</p>
+                  <p className="text-xs text-muted-foreground italic text-center py-12">No inherent risks added. Write one above to start.</p>
                 ) : (
                   risks.map((risk, idx) => (
-                    <div key={idx} className="group flex items-start gap-2 bg-amber-50/20 dark:bg-amber-950/10 border border-amber-100/60 dark:border-amber-900/30 rounded-lg p-2.5 shadow-sm animate-fadeIn">
-                      <input
-                        type="text"
+                    <div key={idx} className="group flex items-start gap-2 bg-amber-50/20 dark:bg-amber-950/10 border border-amber-100/60 dark:border-amber-900/20 rounded-xl p-3 shadow-sm hover:border-amber-200 dark:hover:border-amber-800 transition-colors animate-fadeIn">
+                      <span className="mt-0.5 text-amber-500/60 shrink-0 text-xs font-mono font-bold">#{idx + 1}</span>
+                      <textarea
+                        rows={1}
                         value={risk}
                         onChange={(e) => editRisk(idx, e.target.value)}
-                        className="flex-1 text-xs bg-transparent border-none focus:outline-none focus:ring-0 leading-relaxed text-foreground"
+                        className="flex-1 text-xs bg-transparent border-none focus:outline-none focus:ring-0 leading-relaxed text-zinc-800 dark:text-zinc-200 font-semibold resize-none p-0 h-auto overflow-hidden focus:text-amber-600 transition-colors"
                         disabled={isBusy}
                       />
                       <button
                         onClick={() => removeRisk(idx)}
-                        className="text-amber-600/40 hover:text-destructive group-hover:opacity-100 transition-opacity text-xs"
+                        className="text-amber-600/40 hover:text-destructive opacity-30 group-hover:opacity-100 transition-opacity text-sm leading-none shrink-0"
                         disabled={isBusy}
                         title="Delete"
                       >
@@ -419,10 +498,10 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
           {/* Action buttons at bottom */}
           <div className="flex justify-between items-center pt-4 border-t">
             <Button variant="outline" onClick={() => setMode("select")} disabled={isBusy}>
-              ← Start Over
+              ← Cancel & Choose Role
             </Button>
-            <Button onClick={handleFinalSubmit} disabled={isBusy} size="lg">
-              {isLoading ? "Generating Training Plan..." : "Generate Training Plan 🚀"}
+            <Button onClick={handleFinalSubmit} disabled={isBusy} size="lg" className="shadow-lg shadow-primary/10">
+              {isLoading ? "Assembling Training Plan..." : "Generate Regulatory Training Plan 🚀"}
             </Button>
           </div>
         </div>
