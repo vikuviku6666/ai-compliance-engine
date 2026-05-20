@@ -404,6 +404,23 @@ def extract_role(data: dict):
     return role_info  # { role, responsibilities, risks }
 
 
+@router.post("/extract-multiple-roles")
+def extract_multiple_roles_endpoint(data: dict):
+    """Extract multiple roles with responsibilities and risks from raw text (e.g. PDF).
+
+    Returns:
+        roles: list[dict] where each dict is { role, responsibilities, inherent_risks }
+    """
+    text = data.get("text", "").strip()
+    domain = data.get("domain", "Banking & Payments").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Missing 'text' field.")
+
+    gen = TrainingPlanGenerator()
+    roles = gen.extract_multiple_roles(text, domain=domain)
+    return {"roles": roles}
+
+
 @router.get("/health")
 def health_check():
     """Verify health and connectivity for Neo4j compliance graph and PostgreSQL relational database"""

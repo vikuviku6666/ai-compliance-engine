@@ -128,6 +128,62 @@ class TrainingPlanGenerator:
                 "risks": ["General AML compliance risks"]
             }
 
+    def extract_multiple_roles(self, text: str, domain: str = "Banking & Payments") -> List[Dict[str, Any]]:
+        """Extract multiple roles with responsibilities and risks from a single raw text (PDF)"""
+        prompt = f"""
+        Analyze the following text (which might be a department charter, team handbook, or corporate roles PDF)
+        and extract ALL the distinct job roles/titles described.
+
+        For EACH role identified, extract:
+        1. "role": The name of the role (e.g. "KYC Analyst", "MLRO", "Compliance Investigator").
+        2. "responsibilities": A list of 3-5 key responsibilities or duties of that role described in the text.
+        3. "inherent_risks": A list of 3-5 inherent regulatory, financial crime, or operational risks associated with those responsibilities, tailored specifically to the '{domain}' domain (e.g., if domain is Crypto, risks should relate to virtual asset transfers, anonymous wallets, etc.). If the risks are not explicitly stated, logically extrapolate them based on the responsibilities and the {domain} sector.
+
+        Provided Text:
+        \"\"\"{text}\"\"\"
+
+        Rules:
+        - Identify only real roles mentioned or strongly described in the text.
+        - Respond ONLY with a valid JSON object matching this structure:
+        {{
+            "roles": [
+                {{
+                    "role": "KYC Analyst",
+                    "responsibilities": [
+                        "Verify customer identity document during onboarding",
+                        "Perform beneficial ownership checks"
+                    ],
+                    "inherent_risks": [
+                        "Identity fraud and document forgery",
+                        "Shell company money laundering"
+                    ]
+                }}
+            ]
+        }}
+        Do not include any pre-text, post-text, markdown tags, or extra characters. Respond with raw JSON only.
+        """
+        try:
+            raw = governed_llm_call(
+                prompt,
+                response_format={"type": "json_object"}
+            )
+            if raw.startswith("```json"):
+                raw = raw[7:]
+            if raw.endswith("```"):
+                raw = raw[:-3]
+            raw = raw.strip()
+
+            data = json.loads(raw)
+            roles = data.get("roles", [])
+            if not isinstance(roles, list):
+                roles = []
+            return roles
+        except Exception as e:
+            print(f"Error extracting multiple roles: {e}")
+            # Fallback to single-role extractor or empty
+            single = self.extract_role_info(text)
+            return [single] if single else []
+
     def get_rag_context(self, responsibilities: List[str], risks: List[str]) -> str:
         """Query RAG index for relevant EU AMLR context based on responsibilities and risks"""
         retrieved_chunks = []

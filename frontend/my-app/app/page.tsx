@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import axios from "axios";
-import InputSection, { StructuredInput } from "../components/Upload";
+import InputSection, { StructuredInput, ExtractedRole } from "../components/Upload";
 import ApprovalWorkflow from "../components/ApprovalWorkflow";
 import SavedPlansPanel from "../components/SavedPlansPanel";
 import PlanScorecard from "../components/PlanScorecard";
@@ -35,6 +35,17 @@ interface WorkflowData {
   modules: Module[];
   auditSummary?: Record<string, any>;
 }
+
+const getRoleIcon = (roleName: string) => {
+  const name = roleName.toLowerCase();
+  if (name.includes("kyc")) return "👤";
+  if (name.includes("compliance")) return "🛡️";
+  if (name.includes("mlro")) return "💼";
+  if (name.includes("investigator")) return "🔍";
+  if (name.includes("manager") || name.includes("relationship")) return "🤝";
+  if (name.includes("senior") || name.includes("management")) return "🏛️";
+  return "⚙️";
+};
 
 // ─── Normaliser ───────────────────────────────────────────────────────────────
 // Accepts ANY response shape from the backend and returns a clean WorkflowData.
@@ -239,6 +250,10 @@ export default function Home() {
   const [error, setError]               = useState<string | null>(null);
   const [planRefresh, setPlanRefresh]   = useState(0);
 
+  // Enterprise Curriculum States
+  const [curriculumPlans, setCurriculumPlans] = useState<Record<string, WorkflowData>>({});
+  const [activeRole, setActiveRole] = useState<string>("");
+
   // ── Load a saved plan by id ──────────────────────────────────────────────
   const loadPlan = async (planId: string) => {
     setError(null);
@@ -255,7 +270,8 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     setPlan(null);
-    // Stage already set by onLoadingStart — update to next stage
+    setCurriculumPlans({});
+    setActiveRole("");
     setLoadingStage("Traversing governance graph…");
 
     try {
@@ -284,7 +300,54 @@ export default function Home() {
     }
   };
 
-  const handleReset = () => { setPlan(null); setError(null); };
+  // ── Generate Enterprise Bulk Curriculum training paths sequentially ──
+  const handleProcessMulti = async (data: { domain: string; roles: ExtractedRole[] }) => {
+    setIsLoading(true);
+    setError(null);
+    setPlan(null);
+    setCurriculumPlans({});
+    setActiveRole("");
+
+    const { domain, roles } = data;
+    const generated: Record<string, WorkflowData> = {};
+
+    try {
+      for (let i = 0; i < roles.length; i++) {
+        const r = roles[i];
+        setLoadingStage(`Assembling curriculum for ${r.role} (${i + 1}/${roles.length})…`);
+
+        const planRes = await axios.post(`${API}/compliance/generate-plan`, {
+          role: r.role,
+          responsibilities: r.responsibilities,
+          inherent_risks: r.risks,
+          domain: domain,
+        });
+
+        const normalisedPlan = normalise(planRes.data);
+        generated[r.role] = normalisedPlan;
+      }
+
+      setCurriculumPlans(generated);
+      const firstRole = Object.keys(generated)[0];
+      setActiveRole(firstRole);
+      setPlan(generated[firstRole]);
+      setLoadingStage("");
+      setPlanRefresh((r) => r + 1);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.detail ?? err.message ?? "An error occurred during bulk curriculum generation.");
+      setLoadingStage("");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setPlan(null);
+    setError(null);
+    setCurriculumPlans({});
+    setActiveRole("");
+  };
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const modulesByQuarter = (qKey: "Q1" | "Q2" | "Q3" | "Q4") =>
@@ -322,10 +385,11 @@ export default function Home() {
           <section className="flex flex-col items-center gap-6 mt-8 w-full max-w-7xl mx-auto">
             <InputSection
               onProcess={handleProcess}
+              onProcessMulti={handleProcessMulti}
               isLoading={isLoading}
-              onLoadingStart={() => {
+              onLoadingStart={(stage?: string) => {
                 setIsLoading(true);
-                setLoadingStage("Analysing role description…");
+                setLoadingStage(stage ?? "Analysing role description…");
               }}
             />
 
@@ -374,7 +438,28 @@ export default function Home() {
         ) : (
         /* ── Plan view ────────────────────────────────────────────────────── */
           <section className="flex flex-col items-center justify-center py-8">
-            <div className="w-full max-w-none space-y-6 px-2 md:px-6">
+            <div className="w-full max-w-none space-y-6 px-2 md:px-6 animate-fadeIn">
+
+              {/* Enterprise Curriculum Tab Switcher */}
+              {Object.keys(curriculumPlans).length > 1 && (
+                <div className="flex flex-col items-center justify-center gap-3 bg-zinc-100/60 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/40 max-w-4xl mx-auto mb-6">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">🏢 Enterprise Compliance Curriculum Roles:</span>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {Object.keys(curriculumPlans).map((rName) => (
+                      <button
+                        key={rName}
+                        onClick={() => {
+                          setActiveRole(rName);
+                          setPlan(curriculumPlans[rName]);
+                        }}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-300 shadow-sm ${activeRole === rName ? "bg-primary text-white dark:text-black border-primary font-bold shadow-primary/10" : "bg-card text-foreground border-zinc-200 hover:bg-muted"}`}
+                      >
+                        {getRoleIcon(rName)} {rName}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Title */}
               <div className="text-center mb-8">
