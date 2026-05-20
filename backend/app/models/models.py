@@ -76,4 +76,7 @@ class TrainingPlanModule(Base):
     competency_reference = Column(String)
     behavioural_outcome = Column(String)
     status = Column(String, default="draft")  # draft, approved, needs_revision
+    explainability_trace = Column(String, nullable=True)  # JSON serialized dict
+    evidence = Column(String, nullable=True)  # Added evidence text
+
 

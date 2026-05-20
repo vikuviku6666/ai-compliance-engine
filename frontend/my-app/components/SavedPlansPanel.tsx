@@ -134,8 +134,12 @@ export default function SavedPlansPanel({ refreshTrigger, onSelect }: Props) {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors flex items-center gap-2">
                   {p.role}
+                  <span className="text-[10px] bg-primary/5 text-primary px-1.5 py-0.5 rounded border border-primary/10 flex items-center gap-1 group-hover:bg-primary group-hover:text-white transition-colors">
+                    <span>Read Details</span>
+                    <span className="text-[8px]">▶</span>
+                  </span>
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {p.module_count} module{p.module_count !== 1 ? "s" : ""} ·{" "}
@@ -154,8 +158,20 @@ export default function SavedPlansPanel({ refreshTrigger, onSelect }: Props) {
                 </span>
 
                 <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(`http://127.0.0.1:8000/training/plans/${p.plan_id}/export`, "_blank");
+                  }}
+                  className="p-1.5 rounded hover:bg-blue-50 hover:text-blue-600 text-muted-foreground transition-colors opacity-0 group-hover:opacity-100 border bg-white shadow-sm flex items-center gap-1.5"
+                  title="Export to LMS"
+                >
+                  <span className="text-[10px] font-semibold tracking-wider uppercase text-blue-600">Export JSON</span>
+                  <span className="text-xs">⬇️</span>
+                </button>
+
+                <button
                   onClick={(e) => handleDeleteClick(p, e)}
-                  className="p-1.5 rounded hover:bg-red-50 hover:text-red-600 text-muted-foreground transition-colors opacity-0 group-hover:opacity-100"
+                  className="p-1.5 rounded hover:bg-red-50 hover:text-red-600 text-muted-foreground transition-colors opacity-0 group-hover:opacity-100 ml-1"
                   title="Delete plan"
                 >
                   🗑️

@@ -103,6 +103,8 @@ function normalise(raw: any): WorkflowData {
         quarter: qKey,
         description: rec.behavioural_outcome ?? "",
         status: rec.status ?? "draft",
+        explainabilityTrace: rec.explainability_trace ?? null,
+        evidence: rec.evidence ?? "",
       };
     });
     return {
@@ -221,9 +223,10 @@ function ModuleRow({ mod, planId }: { mod: Module; planId: string }) {
       {/* More info link */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="ml-3.5 text-[10px] text-muted-foreground hover:text-primary underline underline-offset-2 transition-colors mb-1"
+        className="ml-3.5 text-[10px] text-muted-foreground hover:text-primary transition-colors mb-1 bg-muted/30 hover:bg-primary/10 px-2 py-0.5 rounded border flex items-center gap-1 mt-1"
       >
-        {open ? "less info ▲" : "more info ▼"}
+        <span>{open ? "▲" : "▼"}</span>
+        <span>{open ? "Less Details" : "Read Details"}</span>
       </button>
 
       {/* Expanded panel */}
@@ -257,6 +260,12 @@ function ModuleRow({ mod, planId }: { mod: Module; planId: string }) {
             <div className="pt-1.5 border-t">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Why this module</p>
               <p className="text-xs text-muted-foreground leading-relaxed">{mod.description}</p>
+            </div>
+          )}
+          {mod.evidence && (
+            <div className="pt-1.5 border-t">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Legal Evidence Snippet</p>
+              <p className="text-xs text-muted-foreground leading-relaxed italic border-l-2 border-primary pl-2 my-1">"{mod.evidence}"</p>
             </div>
           )}
           {t && (
@@ -527,15 +536,60 @@ export default function Home() {
 
         ) : (plan as any).allApproved ? (
           /* ── Full Screen Approval Success ─────────────────────────────────── */
-          <section className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
+          <section className="flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in duration-500 w-full max-w-4xl mx-auto">
             <div className="text-8xl mb-6">🎉</div>
             <h2 className="text-4xl font-bold mb-4 text-emerald-700">All Training Paths Sent to LMS!</h2>
-            <p className="text-lg text-muted-foreground max-w-lg mb-8">
+            <p className="text-lg text-muted-foreground max-w-lg mb-8 mx-auto">
               The entire compliance curriculum has been approved successfully. All training modules have been exported and queued for your Learning Management System.
             </p>
-            <Button size="lg" onClick={handleReset} className="font-medium px-8">
-              Generate New Paths
-            </Button>
+            <div className="flex gap-4 mb-10">
+              <Button size="lg" onClick={() => window.open(`http://127.0.0.1:8000/training/plans/${plan.planId}/export`, '_blank')} className="font-medium px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+                ⬇️ Download Full JSON
+              </Button>
+              <Button size="lg" onClick={handleReset} variant="outline" className="font-medium px-8 shadow-sm bg-white hover:bg-zinc-50">
+                Generate New Paths
+              </Button>
+            </div>
+            
+            <div className="w-full text-left bg-[#1e1e1e] rounded-xl p-4 overflow-hidden border border-zinc-800 shadow-2xl">
+               <div className="flex items-center justify-between mb-3 pb-3 border-b border-zinc-800">
+                  <span className="text-xs font-mono tracking-widest uppercase text-zinc-400">LMS Export Payload Preview</span>
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></div>
+                  </div>
+               </div>
+               <pre className="text-[11px] text-emerald-400/90 font-mono overflow-auto max-h-[400px] custom-scrollbar">
+                 {JSON.stringify(
+                   {
+                     metadata: { 
+                        plan_id: plan.planId, 
+                        role: plan.role, 
+                        status: "approved",
+                        lms_sync_timestamp: new Date().toISOString()
+                     },
+                     role_context: { 
+                        responsibilities: plan.responsibilities, 
+                        inherent_risks: plan.risks 
+                     },
+                     curriculum: plan.modules.map(m => ({
+                        quarter: m.quarter,
+                        module: m.title,
+                        competency_level: m.competency,
+                        behavioural_outcome: m.description,
+                        governance_mapping: { 
+                            responsibility: m.roleResponsibility, 
+                            risk: m.riskTheme, 
+                            regulation: m.amlrArticle 
+                        },
+                        evidence: m.evidence,
+                        explainability_trace: m.explainabilityTrace
+                     }))
+                   }, null, 2
+                 )}
+               </pre>
+            </div>
           </section>
         ) : (
         /* ── Plan view ────────────────────────────────────────────────────── */

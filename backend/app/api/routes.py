@@ -11,6 +11,7 @@ from app.models.models import TrainingPlan, TrainingPlanModule
 from app.services.generator import TrainingPlanGenerator
 from app.services.compliance_engine import build_compliance_training_plan
 from sqlalchemy import text
+import concurrent.futures
 
 router = APIRouter()
 
@@ -282,6 +283,8 @@ def compliance_generate_plan(data: dict):
                     risk_reference=mod["risk"],
                     competency_reference=mod["competency"],
                     behavioural_outcome=mod["description"],
+                    explainability_trace=json.dumps(mod.get("explainability_trace", {})),
+                    evidence=mod.get("evidence", "")
                 )
                 db.add(mod_row)
 
@@ -298,6 +301,69 @@ def compliance_generate_plan(data: dict):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/training/plans/{plan_id}/export")
+def export_plan(plan_id: str):
+    """Export the training plan as a JSON file for download/LMS integration"""
+    db = SessionLocal()
+    try:
+        plan = db.query(TrainingPlan).filter_by(plan_id=plan_id).first()
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+            
+        modules = db.query(TrainingPlanModule).filter_by(plan_id=plan_id).all()
+        
+        try:
+            responsibilities = json.loads(plan.responsibilities)
+        except:
+            responsibilities = []
+            
+        try:
+            risks = json.loads(plan.risks)
+        except:
+            risks = []
+
+        export_data = {
+            "metadata": {
+                "plan_id": plan.plan_id,
+                "role": plan.role,
+                "created_at": plan.created_at,
+                "status": plan.status,
+                "overall_score": plan.overall_score,
+                "reviewer_notes": plan.reviewer_notes
+            },
+            "role_context": {
+                "responsibilities": responsibilities,
+                "inherent_risks": risks
+            },
+            "curriculum": [
+                {
+                    "quarter": m.quarter,
+                    "module": m.module,
+                    "competency_level": m.competency_reference,
+                    "behavioural_outcome": m.behavioural_outcome,
+                    "governance_mapping": {
+                        "responsibility": m.role_reference,
+                        "risk": m.risk_reference,
+                        "regulation": m.regulation_reference
+                    },
+                    "evidence": m.evidence,
+                    "explainability_trace": json.loads(m.explainability_trace) if m.explainability_trace else None
+                }
+                for m in modules
+            ]
+        }
+        
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            content=export_data,
+            headers={
+                "Content-Disposition": f'attachment; filename="training_plan_{plan.role.replace(" ", "_").lower()}.json"'
+            }
+        )
+    finally:
+        db.close()
 
 
 @router.get("/compliance/explainability/{plan_id}")
@@ -418,6 +484,86 @@ def extract_multiple_roles_endpoint(data: dict):
 
     gen = TrainingPlanGenerator()
     roles = gen.extract_multiple_roles(text, domain=domain)
+    
+    # Check if the user also wants to generate plans for all these roles concurrently
+    generate_plans = data.get("generate_plans", False)
+    
+    if generate_plans and roles:
+        # Create a thread pool to generate plans concurrently
+        # Maximum of 10 workers to prevent rate limiting, adjust if needed
+        max_workers = min(10, len(roles))
+        results = []
+        
+        def process_role(role_data):
+            try:
+                # Use the core compliance engine to build the plan
+                plan = build_compliance_training_plan(
+                    role=role_data.get("role", "Unknown Role"),
+                    responsibilities=role_data.get("responsibilities", []),
+                    inherent_risks=role_data.get("inherent_risks", []),
+                    domain=domain
+                )
+                
+                # Persist to database
+                plan_id = str(uuid.uuid4())
+                created_at = datetime.now().isoformat()
+                
+                # Each thread needs its own DB session
+                db = SessionLocal()
+                try:
+                    plan_row = TrainingPlan(
+                        plan_id=plan_id,
+                        role=plan["role"],
+                        responsibilities=json.dumps(role_data.get("responsibilities", [])),
+                        risks=json.dumps(role_data.get("inherent_risks", [])),
+                        status="draft",
+                        overall_score=0,
+                        created_at=created_at,
+                    )
+                    db.add(plan_row)
+
+                    for idx, mod in enumerate(plan["plan"]):
+                        mod_row = TrainingPlanModule(
+                            id=f"{plan_id}_mod_{idx}",
+                            plan_id=plan_id,
+                            quarter=mod["quarter"],
+                            module=mod["module"],
+                            role_reference=mod["responsibility"],
+                            regulation_reference=mod["regulation_ref"],
+                            risk_reference=mod["risk"],
+                            competency_reference=mod["competency"],
+                            behavioural_outcome=mod["description"],
+                            explainability_trace=json.dumps(mod.get("explainability_trace", {})),
+                            evidence=mod.get("evidence", "")
+                        )
+                        db.add(mod_row)
+
+                    db.commit()
+                    plan["plan_id"] = plan_id
+                    plan["created_at"] = created_at
+                    return {"role": role_data.get("role"), "status": "success", "plan": plan}
+                except Exception as db_err:
+                    db.rollback()
+                    print(f"DB persist error for {role_data.get('role')}: {db_err}")
+                    return {"role": role_data.get("role"), "status": "error", "error": "Database error"}
+                finally:
+                    db.close()
+            except Exception as e:
+                print(f"Error processing role {role_data.get('role')}: {e}")
+                return {"role": role_data.get("role"), "status": "error", "error": str(e)}
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all tasks and wait for them to complete
+            futures = [executor.submit(process_role, role) for role in roles]
+            for future in concurrent.futures.as_completed(futures):
+                results.append(future.result())
+                
+        return {
+            "roles": roles,
+            "generated_plans": results,
+            "count": len(results)
+        }
+        
     return {"roles": roles}
 
 
@@ -827,8 +973,16 @@ def get_plan(plan_id: str):
         except Exception:
             risks = [plan.risks] if plan.risks else []
             
-        recommendations = [
-            {
+        recommendations = []
+        for m in modules:
+            trace = None
+            if m.explainability_trace:
+                try:
+                    trace = json.loads(m.explainability_trace)
+                except:
+                    pass
+                    
+            recommendations.append({
                 "id": m.id,
                 "quarter": m.quarter,
                 "module": m.module,
@@ -837,10 +991,10 @@ def get_plan(plan_id: str):
                 "risk_reference": m.risk_reference,
                 "competency_reference": m.competency_reference,
                 "behavioural_outcome": m.behavioural_outcome,
-                "status": m.status
-            }
-            for m in modules
-        ]
+                "status": m.status,
+                "explainability_trace": trace,
+                "evidence": m.evidence
+            })
         
         return {
             "training_plan_id": plan.plan_id,

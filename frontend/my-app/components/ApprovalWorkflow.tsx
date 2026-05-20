@@ -226,14 +226,22 @@ export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [], 
       )}
 
       {stage === "published" && !onPlanApproved ? (
-        <div className="text-center py-8 space-y-2">
+        <div className="text-center py-8 space-y-4 max-w-2xl mx-auto">
           <div className="text-5xl mb-3">🎉</div>
-          <div className="text-emerald-700 font-semibold text-xl">
+          <div className="text-emerald-700 font-semibold text-2xl">
             Training Plan Approved!
           </div>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-sm max-w-md mx-auto">
             The plan has been saved to the database and is ready for LMS export.
           </p>
+          <div className="pt-4 flex justify-center gap-3">
+             <button onClick={() => window.open(`http://127.0.0.1:8000/training/plans/${planId}/export`, '_blank')} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition-colors text-sm">
+               ⬇️ Download LMS JSON
+             </button>
+             <button onClick={() => window.location.reload()} className="px-5 py-2.5 bg-white hover:bg-zinc-50 border rounded-lg font-medium shadow-sm transition-colors text-sm">
+               Generate New Path
+             </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">

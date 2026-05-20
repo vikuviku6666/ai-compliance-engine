@@ -21,6 +21,7 @@ Flow:
 import json
 import re
 from typing import List, Dict, Any, Optional
+import concurrent.futures
 from app.graph.neo4j_client import driver
 from app.rag.knowledge_index import KnowledgeIndexBuilder
 from app.services.llm_service import governed_llm_call
@@ -424,15 +425,8 @@ def build_compliance_training_plan(
     # ── 1. Neo4j exact/fuzzy role traversal ───────────────────────────────────
     neo4j_paths = get_governed_paths(role)
 
-    for path in neo4j_paths:
-        key = (path["risk"], path["regulation"])
-        if key in seen_modules:
-            continue
-        seen_modules.add(key)
-
+    def process_neo4j_path(path):
         reg_ref = _build_regulation_ref(path["regulation"], path["article_num"])
-
-        # Generate a professional module name via LLM
         module_name = generate_module_name(
             role=role,
             responsibility=path["responsibility"],
@@ -441,8 +435,6 @@ def build_compliance_training_plan(
             regulation_ref=reg_ref,
             domain=domain,
         )
-
-        # Neo4j modules: use deterministic description — no extra LLM call needed
         description = _deterministic_description(
             role=role,
             responsibility=path["responsibility"],
@@ -450,25 +442,40 @@ def build_compliance_training_plan(
             control=path["control"],
             regulation_ref=reg_ref,
         )
-        # Still fetch evidence for the expand panel
-        evidence = builder.assemble_evidence_chain(
+        local_builder = KnowledgeIndexBuilder()
+        evidence = local_builder.assemble_evidence_chain(
             regulation_name=path["regulation"],
             control_name=path["control"],
             limit=2
         )
-        modules.append({
-            "_sort_key":      path["article_num"] or 999,
-            "module":         module_name,
-            "responsibility": path["responsibility"],
-            "risk":           path["risk"],
-            "control":        path["control"],
-            "regulation":     path["regulation"],
-            "article_num":    path["article_num"],
-            "regulation_ref": reg_ref,
-            "evidence":       evidence,
-            "description":    description,
-            "source":         "neo4j",
-        })
+        return {
+            "key": (path["risk"], path["regulation"]),
+            "data": {
+                "_sort_key":      path["article_num"] or 999,
+                "module":         module_name,
+                "responsibility": path["responsibility"],
+                "risk":           path["risk"],
+                "control":        path["control"],
+                "regulation":     path["regulation"],
+                "article_num":    path["article_num"],
+                "regulation_ref": reg_ref,
+                "evidence":       evidence,
+                "description":    description,
+                "source":         "neo4j",
+            }
+        }
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = []
+        for path in neo4j_paths:
+            key = (path["risk"], path["regulation"])
+            if key not in seen_modules:
+                seen_modules.add(key)
+                futures.append(executor.submit(process_neo4j_path, path))
+                
+        for future in concurrent.futures.as_completed(futures):
+            res = future.result()
+            modules.append(res["data"])
 
     # ── 2. Graph lookup for input inherent_risks not yet covered ──────────────
     covered_risks = {m["risk"] for m in modules}
@@ -476,14 +483,11 @@ def build_compliance_training_plan(
 
     if uncovered_risks:
         graph_hits = get_graph_controls_for_risks(uncovered_risks)
-        for hit in graph_hits:
-            key = (hit["matched_risk"], hit["regulation"])
-            if key in seen_modules:
-                continue
-            seen_modules.add(key)
-
+        
+        def process_graph_hit(hit):
             reg_ref2 = _build_regulation_ref(hit["regulation"], hit["article_num"])
-            evidence = builder.assemble_evidence_chain(
+            local_builder = KnowledgeIndexBuilder()
+            evidence = local_builder.assemble_evidence_chain(
                 regulation_name=hit["regulation"],
                 control_name=hit["control"],
                 limit=2
@@ -507,20 +511,35 @@ def build_compliance_training_plan(
                 evidence=evidence,
                 domain=domain,
             )
-            modules.append({
-                "_sort_key":      hit["article_num"] or 999,
-                "module":         module_name,
-                "responsibility": resp,
-                "risk":           hit["matched_risk"],
-                "control":        hit["control"],
-                "regulation":     hit["regulation"],
-                "article_num":    hit["article_num"],
-                "regulation_ref": reg_ref2,
-                "evidence":       evidence,
-                "description":    description,
-                "source":         "neo4j_risk_match",
-            })
-            covered_risks.add(hit["matched_risk"])
+            return {
+                "key": (hit["matched_risk"], hit["regulation"]),
+                "data": {
+                    "_sort_key":      hit["article_num"] or 999,
+                    "module":         module_name,
+                    "responsibility": resp,
+                    "risk":           hit["matched_risk"],
+                    "control":        hit["control"],
+                    "regulation":     hit["regulation"],
+                    "article_num":    hit["article_num"],
+                    "regulation_ref": reg_ref2,
+                    "evidence":       evidence,
+                    "description":    description,
+                    "source":         "neo4j_risk_match",
+                }
+            }
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = []
+            for hit in graph_hits:
+                key = (hit["matched_risk"], hit["regulation"])
+                if key not in seen_modules:
+                    seen_modules.add(key)
+                    futures.append(executor.submit(process_graph_hit, hit))
+                    
+            for future in concurrent.futures.as_completed(futures):
+                res = future.result()
+                modules.append(res["data"])
+                covered_risks.add(res["data"]["risk"])
 
     # ── 3. RAG augmentation for risks not in graph at all ─────────────────────
     still_uncovered = [r for r in inherent_risks if r not in covered_risks]
@@ -531,12 +550,7 @@ def build_compliance_training_plan(
             limit_per_risk=2,
         )
 
-        for hit in rag_hits:
-            key = (hit["risk"], hit["regulation"])
-            if key in seen_modules or hit["legal_type"] == "general":
-                continue
-            seen_modules.add(key)
-
+        def process_rag_hit(hit):
             control = _infer_control_from_regulation(
                 risk=hit["risk"],
                 regulation=hit["regulation"],
@@ -563,19 +577,34 @@ def build_compliance_training_plan(
                 domain=domain,
             )
 
-            modules.append({
-                "_sort_key":      hit["article_num"] or hit["recital_num"] or 999,
-                "module":         module_name,
-                "responsibility": resp,
-                "risk":           hit["risk"],
-                "control":        control,
-                "regulation":     hit["regulation"],
-                "article_num":    hit["article_num"],
-                "regulation_ref": _build_regulation_ref(hit["regulation"], hit["article_num"], hit["recital_num"]),
-                "evidence":       hit["evidence_snippet"],
-                "description":    description,
-                "source":         "rag",
-            })
+            return {
+                "key": (hit["risk"], hit["regulation"]),
+                "data": {
+                    "_sort_key":      hit["article_num"] or hit["recital_num"] or 999,
+                    "module":         module_name,
+                    "responsibility": resp,
+                    "risk":           hit["risk"],
+                    "control":        control,
+                    "regulation":     hit["regulation"],
+                    "article_num":    hit["article_num"],
+                    "regulation_ref": _build_regulation_ref(hit["regulation"], hit["article_num"], hit["recital_num"]),
+                    "evidence":       hit["evidence_snippet"],
+                    "description":    description,
+                    "source":         "rag",
+                }
+            }
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = []
+            for hit in rag_hits:
+                key = (hit["risk"], hit["regulation"])
+                if key not in seen_modules and hit["legal_type"] != "general":
+                    seen_modules.add(key)
+                    futures.append(executor.submit(process_rag_hit, hit))
+                    
+            for future in concurrent.futures.as_completed(futures):
+                res = future.result()
+                modules.append(res["data"])
 
     # ── 3. Assign competency, sort by progression, assign quarters ──────────────
     # Derive competency for every module
