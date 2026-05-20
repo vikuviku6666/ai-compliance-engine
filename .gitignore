@@ -25,3 +25,4 @@ backend/data/documents/
 # OS
 .DS_Store
 *.swp
+pitch_script.md
