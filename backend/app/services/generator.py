@@ -130,23 +130,45 @@ class TrainingPlanGenerator:
 
     def get_rag_context(self, responsibilities: List[str], risks: List[str]) -> str:
         """Query RAG index for relevant EU AMLR context based on responsibilities and risks"""
-        queries = responsibilities + risks
         retrieved_chunks = []
         seen_chunk_ids = set()
 
-        for q in queries[:6]:
-            results = self.rag_builder.search(q, limit=2)
-            for r in results:
-                if r["chunk_id"] not in seen_chunk_ids:
-                    seen_chunk_ids.add(r["chunk_id"])
-                    retrieved_chunks.append(r)
+        # Query responsibilities -> retrieve deterministic Articles (obligations)
+        for q in responsibilities[:3]:
+            try:
+                results = self.rag_builder.search_for_answer_type(q, "deterministic", limit=2)
+                for r in results:
+                    if r["chunk_id"] not in seen_chunk_ids:
+                        seen_chunk_ids.add(r["chunk_id"])
+                        retrieved_chunks.append(r)
+            except Exception as e:
+                print(f"⚠ RAG deterministic search failed (continuing): {e}")
+
+        # Query risks -> retrieve explanatory Recitals (context/rationales)
+        for q in risks[:3]:
+            try:
+                results = self.rag_builder.search_for_answer_type(q, "explanatory", limit=2)
+                for r in results:
+                    if r["chunk_id"] not in seen_chunk_ids:
+                        seen_chunk_ids.add(r["chunk_id"])
+                        retrieved_chunks.append(r)
+            except Exception as e:
+                print(f"⚠ RAG explanatory search failed (continuing): {e}")
 
         context_parts = []
         for i, chunk in enumerate(retrieved_chunks[:8]):
             section_info = chunk.get("section") or "General"
+            legal_type = chunk.get("legal_type") or "general"
+            obligation_type = chunk.get("obligation_type") or "EXPLANATORY"
+            actor = chunk.get("actor") or "Obliged Entity"
+            topic = chunk.get("topic") or "General Compliance"
+            risk_category = chunk.get("risk_category") or "AML"
             content = chunk.get("content", "")
+
+            # Formulate audit-grade rich citations for the LLM
+            citation_header = f"[{section_info}] type={legal_type} | obligation={obligation_type} | topic={topic} | actor={actor} | risk={risk_category}"
             context_parts.append(
-                f"--- Document Source Section: {section_info} (ID: {chunk['chunk_id']}) ---\n{content}\n"
+                f"--- Document Source Section: {citation_header} (ID: {chunk['chunk_id']}) ---\n{content}\n"
             )
 
         return "\n".join(context_parts)

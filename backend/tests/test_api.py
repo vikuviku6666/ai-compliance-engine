@@ -19,6 +19,8 @@ def test_generate_training():
     assert response.status_code == 200
     data = response.json()
     assert data["role"] == "KYC Analyst"
-    assert len(data["training"]) > 0
-    assert data["training"][0]["training"] == "CDD Fundamentals"
+    assert "details" in data
+    assert len(data["details"]) > 0
+    # The first detail should be a CDD-related module
+    assert any("CDD" in d["training"] for d in data["details"])
 

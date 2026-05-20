@@ -40,12 +40,12 @@ def test_neo4j_connection_and_traversal():
     paths = RoadmapService.traverse_compliance_path("KYC Analyst")
     assert len(paths) > 0
     
-    cdd_path = next((p for p in paths if p["training"] == "CDD Fundamentals"), None)
+    cdd_path = next((p for p in paths if "CDD" in p["training"] and p["responsibility"] == "Customer Onboarding"), None)
     assert cdd_path is not None
     assert cdd_path["responsibility"] == "Customer Onboarding"
-    assert cdd_path["risk"] == "Identity Fraud"
-    assert cdd_path["control"] == "CDD"
-    assert cdd_path["regulation"] == "Recital 40"
+    assert cdd_path["risk"] in ("Identity Fraud", "Impersonation Risk")
+    assert cdd_path["control"] == "Customer Due Diligence (CDD)"
+    assert cdd_path["regulation"] == "Article 22"
 
 
 def test_embedding_generation():

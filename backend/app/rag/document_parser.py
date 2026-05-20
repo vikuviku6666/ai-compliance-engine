@@ -29,6 +29,12 @@ class DocumentChunk:
     recital_num: Optional[int] = None    # 40
     chapter: Optional[str] = None        # "Chapter II"
     legal_type: str = "general"          # "article" | "recital" | "chapter" | "general"
+    # --- AML metadata ---
+    topic: Optional[str] = None
+    obligation_type: Optional[str] = None
+    actor: Optional[str] = None
+    jurisdiction: str = "EU"
+    risk_category: Optional[str] = None
 
 
 # ─── regex patterns for legal structure ───────────────────────────────────────
@@ -91,6 +97,93 @@ def _infer_section_from_content(text: str):
     return None, "general", None, None
 
 
+def _extract_aml_metadata(text: str, legal_type: str) -> dict:
+    """Deterministically extract AML metadata fields from text via keyword matching."""
+    text_lower = text.lower()
+
+    # 1. Topic Extraction
+    topic = "General Compliance"
+    topic_map = [
+        ("customer due diligence", "Customer Due Diligence"),
+        (" cdd", "Customer Due Diligence"),
+        ("beneficial owner", "Beneficial Ownership"),
+        ("politically exposed", "PEP Screening"),
+        (" pep", "PEP Screening"),
+        ("suspicious activity", "Suspicious Activity Reporting"),
+        ("suspicious transaction", "Suspicious Activity Reporting"),
+        (" sar", "Suspicious Activity Reporting"),
+        ("sanctions", "Sanctions Screening"),
+        ("identity verif", "Identity Verification"),
+        ("risk assessment", "Risk Assessment"),
+        ("correspondent", "Correspondent Banking"),
+        ("cash control", "Cash Controls"),
+        ("crypto", "Virtual Assets"),
+        ("virtual asset", "Virtual Assets")
+    ]
+    for pattern, val in topic_map:
+        if pattern in text_lower:
+            topic = val
+            break
+
+    # 2. Obligation Type
+    obligation_type = "EXPLANATORY" if legal_type == "recital" else "SHALL"
+    first_300 = text_lower[:300]
+    if "shall" in first_300 or "must" in first_300:
+        obligation_type = "SHALL"
+    elif "should" in first_300:
+        obligation_type = "SHOULD"
+    elif "may" in first_300:
+        obligation_type = "MAY"
+
+    # 3. Actor Extraction
+    actor = "Obliged Entity"
+    actor_map = [
+        ("obliged entit", "Obliged Entity"),
+        ("amla", "AMLA"),
+        ("member state", "Member State"),
+        ("competent authorit", "Competent Authority"),
+        ("financial intelligence", "FIU"),
+        (" fiu", "FIU"),
+        ("credit institution", "Credit Institution"),
+        ("financial institution", "Financial Institution")
+    ]
+    for pattern, val in actor_map:
+        if pattern in text_lower:
+            actor = val
+            break
+
+    # 4. Jurisdiction
+    jurisdiction = "EU"
+
+    # 5. Risk Category
+    risk_category = "AML"
+    risk_map = [
+        ("money laundering", "AML"),
+        ("aml", "AML"),
+        ("kyc", "KYC"),
+        ("due diligence", "KYC"),
+        ("pep", "PEP"),
+        ("sanctions", "Sanctions"),
+        ("terrorism financing", "CFT"),
+        (" cft", "CFT"),
+        ("beneficial owner", "Beneficial Ownership"),
+        ("crypto", "Virtual Assets"),
+        ("virtual asset", "Virtual Assets")
+    ]
+    for pattern, val in risk_map:
+        if pattern in text_lower:
+            risk_category = val
+            break
+
+    return {
+        "topic": topic,
+        "obligation_type": obligation_type,
+        "actor": actor,
+        "jurisdiction": jurisdiction,
+        "risk_category": risk_category
+    }
+
+
 class DocumentParser:
     """Parse compliance documents and create structured chunks with legal metadata."""
 
@@ -126,6 +219,7 @@ class DocumentParser:
             text = self.clean_text(text)
             if len(text) < self.min_chunk_size:
                 return
+            meta = _extract_aml_metadata(text, current_legal_type)
             chunks.append(DocumentChunk(
                 content=text[:5000],
                 section=current_section,
@@ -137,6 +231,11 @@ class DocumentParser:
                 recital_num=current_recital_num,
                 chapter=current_chapter,
                 legal_type=current_legal_type,
+                topic=meta["topic"],
+                obligation_type=meta["obligation_type"],
+                actor=meta["actor"],
+                jurisdiction=meta["jurisdiction"],
+                risk_category=meta["risk_category"],
             ))
             chunk_idx += 1
 
@@ -220,6 +319,7 @@ class DocumentParser:
             text = self.clean_text(text)
             if len(text) < self.min_chunk_size:
                 return
+            meta = _extract_aml_metadata(text, current_legal_type)
             chunks.append(DocumentChunk(
                 content=text[:5000],
                 section=current_section,
@@ -231,6 +331,11 @@ class DocumentParser:
                 recital_num=current_recital_num,
                 chapter=current_chapter,
                 legal_type=current_legal_type,
+                topic=meta["topic"],
+                obligation_type=meta["obligation_type"],
+                actor=meta["actor"],
+                jurisdiction=meta["jurisdiction"],
+                risk_category=meta["risk_category"],
             ))
             chunk_idx += 1
 

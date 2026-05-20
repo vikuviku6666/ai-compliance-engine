@@ -30,10 +30,36 @@ from app.services.llm_service import governed_llm_call
 # Internal helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
+def _resolve_regulation_to_article(regulation_name: str) -> tuple:
+    """Resolve a regulation name (which may be a Recital) to its real Article number dynamically using PostgreSQL."""
+    if not regulation_name:
+        return regulation_name, None
+
+    m = re.search(r'(\d+)', regulation_name)
+    num = int(m.group(1)) if m else None
+
+    if regulation_name.lower().startswith("recital") and num:
+        try:
+            from app.db.database import SessionLocal
+            from sqlalchemy import text
+            with SessionLocal() as db_session:
+                closest_art = db_session.execute(text("""
+                    SELECT article_num FROM knowledge_chunks
+                    WHERE recital_num = :rec AND article_num IS NOT NULL
+                    LIMIT 1
+                """), {"rec": num}).scalar()
+                if closest_art:
+                    return f"Article {closest_art}", closest_art
+        except Exception as e:
+            print(f"⚠ Failed to dynamically resolve Recital to Article (using fallback): {e}")
+
+    return regulation_name, num
+
+
 def _extract_article_num(regulation_name: str) -> Optional[int]:
     """Extract integer article/recital number from a regulation string."""
-    m = re.search(r'(\d+)', regulation_name)
-    return int(m.group(1)) if m else None
+    _, num = _resolve_regulation_to_article(regulation_name)
+    return num
 
 
 def _quarter_label(idx: int) -> str:
@@ -120,7 +146,9 @@ def get_governed_paths(role: str) -> List[Dict[str, Any]]:
         paths = []
         for r in rows:
             d = dict(r)
-            d["article_num"] = _extract_article_num(d["regulation"])
+            resolved_reg, resolved_art = _resolve_regulation_to_article(d["regulation"])
+            d["regulation"] = resolved_reg
+            d["article_num"] = resolved_art
             paths.append(d)
         return paths
 
@@ -151,7 +179,9 @@ def get_graph_controls_for_risks(risks: List[str]) -> List[Dict[str, Any]]:
                     continue
                 seen.add(key)
                 d = dict(r)
-                d["article_num"] = _extract_article_num(d["regulation"])
+                resolved_reg, resolved_art = _resolve_regulation_to_article(d["regulation"])
+                d["regulation"] = resolved_reg
+                d["article_num"] = resolved_art
                 d["original_risk"] = risk
                 results.append(d)
     return results
@@ -183,14 +213,16 @@ def find_regulations_for_risks(
                 continue
             seen_sections.add(section)
 
-            # Also search combined "risk + responsibility" for richer hits
             article_num = h.get("article_num")
             recital_num = h.get("recital_num")
 
+            # Dynamic Article number resolution for Recitals
+            resolved_reg, resolved_art = _resolve_regulation_to_article(section)
+
             results.append({
                 "risk":             risk,
-                "regulation":       section,
-                "article_num":      article_num,
+                "regulation":       resolved_reg,
+                "article_num":      resolved_art or article_num,
                 "recital_num":      recital_num,
                 "legal_type":       h["legal_type"],
                 "evidence_snippet": h["content"][:400],
@@ -204,11 +236,18 @@ def find_regulations_for_risks(
             if section in seen_sections or section == "General":
                 continue
             seen_sections.add(section)
+
+            article_num = h.get("article_num")
+            recital_num = h.get("recital_num")
+
+            # Dynamic Article number resolution for Recitals
+            resolved_reg, resolved_art = _resolve_regulation_to_article(section)
+
             results.append({
                 "risk":             resp,          # responsibility itself as the driver
-                "regulation":       section,
-                "article_num":      h.get("article_num"),
-                "recital_num":      h.get("recital_num"),
+                "regulation":       resolved_reg,
+                "article_num":      resolved_art or article_num,
+                "recital_num":      recital_num,
                 "legal_type":       h["legal_type"],
                 "evidence_snippet": h["content"][:400],
             })
@@ -237,6 +276,54 @@ def _deterministic_description(
         f"by implementing {control} controls. "
         f"It directly mitigates the risk of {risk} as required by {regulation_ref}."
     )
+
+
+def generate_module_name(
+    role: str,
+    responsibility: str,
+    risk: str,
+    control: str,
+    regulation_ref: str,
+) -> str:
+    """Generate a professional, human-readable training module name using LLM.
+
+    Keeps the article reference separate — this function returns only the name,
+    e.g. "Customer Due Diligence for High-Risk Onboarding" not "CDD — Art.22".
+
+    Falls back to a clean deterministic name if LLM fails.
+    """
+    prompt = f"""
+    Generate a concise, professional training module name (4-8 words) for the following compliance context.
+
+    Role:           {role}
+    Responsibility: {responsibility}
+    Risk:           {risk}
+    Control:        {control}
+    Regulation:     {regulation_ref}
+
+    Rules:
+    - Return ONLY the module name — no article reference, no quotes, no punctuation at the end
+    - It should sound like a real professional training course title
+    - It must reflect the specific risk and control (not generic)
+    - Examples of good names:
+        "Customer Due Diligence for High-Risk Onboarding"
+        "Suspicious Activity Reporting Obligations"
+        "Beneficial Ownership Verification Fundamentals"
+        "PEP Screening and Enhanced Scrutiny"
+        "Sanctions Evasion Risk and Controls"
+    - Do NOT include article numbers in the name
+    """
+    try:
+        name = governed_llm_call(prompt).strip().strip('"').strip("'").rstrip(".")
+        # Sanity check — must be between 3 and 10 words
+        if 3 <= len(name.split()) <= 10:
+            return name
+        # Too long or too short — fall through to fallback
+    except Exception as e:
+        print(f"Module name generation error: {e}")
+
+    # Clean deterministic fallback
+    return f"{control} — {responsibility}"
 
 
 def generate_module_description(
@@ -339,7 +426,16 @@ def build_compliance_training_plan(
 
         reg_ref = _build_regulation_ref(path["regulation"], path["article_num"])
 
-        # Neo4j modules: use deterministic description — no LLM call needed
+        # Generate a professional module name via LLM
+        module_name = generate_module_name(
+            role=role,
+            responsibility=path["responsibility"],
+            risk=path["risk"],
+            control=path["control"],
+            regulation_ref=reg_ref,
+        )
+
+        # Neo4j modules: use deterministic description — no extra LLM call needed
         description = _deterministic_description(
             role=role,
             responsibility=path["responsibility"],
@@ -355,7 +451,7 @@ def build_compliance_training_plan(
         )
         modules.append({
             "_sort_key":      path["article_num"] or 999,
-            "module":         path["training"],
+            "module":         module_name,
             "responsibility": path["responsibility"],
             "risk":           path["risk"],
             "control":        path["control"],
@@ -379,12 +475,20 @@ def build_compliance_training_plan(
                 continue
             seen_modules.add(key)
 
+            reg_ref2 = _build_regulation_ref(hit["regulation"], hit["article_num"])
             evidence = builder.assemble_evidence_chain(
                 regulation_name=hit["regulation"],
                 control_name=hit["control"],
                 limit=2
             )
             resp = hit.get("responsibility") or _match_responsibility(hit["original_risk"], responsibilities)
+            module_name = generate_module_name(
+                role=role,
+                responsibility=resp,
+                risk=hit["matched_risk"],
+                control=hit["control"],
+                regulation_ref=reg_ref2,
+            )
             description = generate_module_description(
                 role=role,
                 responsibility=resp,
@@ -396,13 +500,13 @@ def build_compliance_training_plan(
             )
             modules.append({
                 "_sort_key":      hit["article_num"] or 999,
-                "module":         hit["training"] or _build_module_name(hit["regulation"], hit["control"], hit["matched_risk"]),
+                "module":         module_name,
                 "responsibility": resp,
                 "risk":           hit["matched_risk"],
                 "control":        hit["control"],
                 "regulation":     hit["regulation"],
                 "article_num":    hit["article_num"],
-                "regulation_ref": _build_regulation_ref(hit["regulation"], hit["article_num"]),
+                "regulation_ref": reg_ref2,
                 "evidence":       evidence,
                 "description":    description,
                 "source":         "neo4j_risk_match",
@@ -411,7 +515,6 @@ def build_compliance_training_plan(
 
     # ── 3. RAG augmentation for risks not in graph at all ─────────────────────
     still_uncovered = [r for r in inherent_risks if r not in covered_risks]
-    # Also augment responsibilities-driven lookup
     if still_uncovered or not modules:
         rag_hits = find_regulations_for_risks(
             risks=still_uncovered if still_uncovered else inherent_risks,
@@ -430,8 +533,15 @@ def build_compliance_training_plan(
                 regulation=hit["regulation"],
                 evidence=hit["evidence_snippet"],
             )
-            module_name = _build_module_name(hit["regulation"], control, hit["risk"])
+            reg_ref3 = _build_regulation_ref(hit["regulation"], hit["article_num"], hit["recital_num"])
             resp = _match_responsibility(hit["risk"], responsibilities)
+            module_name = generate_module_name(
+                role=role,
+                responsibility=resp,
+                risk=hit["risk"],
+                control=control,
+                regulation_ref=reg_ref3,
+            )
             description = generate_module_description(
                 role=role,
                 responsibility=resp,

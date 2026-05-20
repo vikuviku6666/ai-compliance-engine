@@ -11,9 +11,22 @@ from app.api.routes import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Warm up the embedding model before any user request arrives.
-    Moves the 1.5s cold-start cost to server boot time, not first click.
+    """Ensure database tables exist and warm up the embedding model.
+    Moves table creation and model cold-start to server boot time.
     """
+    try:
+        from app.db.database import engine
+        from app.models.models import Base
+        from app.rag.knowledge_index import KnowledgeChunk
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            conn.commit()
+        Base.metadata.create_all(bind=engine)
+        print("✓ Database tables verified/created")
+    except Exception as e:
+        print(f"⚠ Database table creation failed (non-fatal): {e}")
+
     try:
         from app.rag.embedder import create_embedding
         create_embedding("warmup")

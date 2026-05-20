@@ -19,12 +19,12 @@ from app.graph.neo4j_client import driver
 from sqlalchemy import text, Column, String, Integer, Float
 from sqlalchemy.dialects.postgresql import UUID
 from pgvector.sqlalchemy import Vector
-from sqlalchemy.orm import declarative_base
 import uuid
 from typing import List, Optional
 from datetime import datetime
+import re
 
-Base = declarative_base()
+from app.db.database import Base
 
 
 class KnowledgeChunk(Base):
@@ -41,6 +41,12 @@ class KnowledgeChunk(Base):
     recital_num   = Column(Integer, nullable=True, index=True)
     chapter       = Column(String, nullable=True)
     legal_type    = Column(String, default="general")   # article | recital | chapter | general
+    # --- AML metadata ---
+    topic           = Column(String, nullable=True, index=True)
+    obligation_type = Column(String, nullable=True, index=True)
+    actor           = Column(String, nullable=True)
+    jurisdiction    = Column(String, nullable=True, default="EU")
+    risk_category   = Column(String, nullable=True, index=True)
     # -------------------------
     content       = Column(String)
     embedding     = Column(Vector(1024))
@@ -69,6 +75,11 @@ class KnowledgeIndexBuilder:
                 ("recital_num", "INTEGER"),
                 ("chapter",     "VARCHAR"),
                 ("legal_type",  "VARCHAR DEFAULT 'general'"),
+                ("topic",       "VARCHAR"),
+                ("obligation_type", "VARCHAR"),
+                ("actor",       "VARCHAR"),
+                ("jurisdiction", "VARCHAR DEFAULT 'EU'"),
+                ("risk_category", "VARCHAR"),
             ]:
                 try:
                     conn.execute(text(
@@ -147,6 +158,11 @@ class KnowledgeIndexBuilder:
                     recital_num   = chunk.recital_num,
                     chapter       = chunk.chapter,
                     legal_type    = chunk.legal_type,
+                    topic           = chunk.topic,
+                    obligation_type = chunk.obligation_type,
+                    actor           = chunk.actor,
+                    jurisdiction    = chunk.jurisdiction,
+                    risk_category   = chunk.risk_category,
                     content       = chunk.content[:5000],
                     embedding     = emb,
                     created_at    = datetime.now().isoformat(),
@@ -165,6 +181,9 @@ class KnowledgeIndexBuilder:
 
         self.db.commit()
         print(f"  ✓ stored={stored}  skipped={skipped}  errors={errors}")
+
+        # Dynamically link each Recital to its closest Article via pgvector similarity
+        self.link_recitals_to_articles()
 
         # Update Neo4j with richer section nodes
         self._update_neo4j_index(chunks, source_name, drop_existing)
@@ -226,20 +245,54 @@ class KnowledgeIndexBuilder:
 
         print(f"  ✓ Neo4j updated — {len(seen)} section nodes")
 
+    def link_recitals_to_articles(self):
+        """Dynamically link each Recital to its semantically closest Article using pgvector similarity."""
+        print("  • Dynamically linking Recitals to Articles via pgvector similarity...")
+        recitals = self.db.execute(text(
+            "SELECT id, embedding FROM knowledge_chunks WHERE legal_type = 'recital'"
+        )).fetchall()
+
+        linked = 0
+        for r in recitals:
+            closest_article = self.db.execute(text("""
+                SELECT article_num FROM knowledge_chunks
+                WHERE legal_type = 'article' AND article_num IS NOT NULL
+                ORDER BY embedding <-> :emb LIMIT 1
+            """), {"emb": r.embedding}).scalar()
+
+            if closest_article:
+                self.db.execute(text("""
+                    UPDATE knowledge_chunks
+                    SET article_num = :art_num
+                    WHERE id = :rid
+                """), {"art_num": closest_article, "rid": r.id})
+                linked += 1
+
+        self.db.commit()
+        print(f"  ✓ Dynamically linked {linked} Recitals to their most related Articles.")
+
     # ──────────────────────────────────────────────────────────────────────────
     # Hybrid search (Phase 5.3 + 5.4)
     # ──────────────────────────────────────────────────────────────────────────
 
     def search(self, query_text: str, limit: int = 5,
                article_num: Optional[int] = None,
-               recital_num: Optional[int] = None) -> List[dict]:
-        """Hybrid search: vector similarity + optional article/recital filter + re-ranking.
+               recital_num: Optional[int] = None,
+               legal_type: Optional[str] = None,
+               obligation_type: Optional[str] = None,
+               risk_category: Optional[str] = None,
+               actor: Optional[str] = None) -> List[dict]:
+        """Hybrid search: vector similarity + optional filters + re-ranking.
 
         Args:
             query_text:  Free-text query
             limit:       Number of results after re-ranking
             article_num: Optionally restrict to a specific article number
             recital_num: Optionally restrict to a specific recital number
+            legal_type:  Optionally restrict to 'article' or 'recital'
+            obligation_type: Optionally restrict to 'SHALL', 'MUST', etc.
+            risk_category: Optionally restrict to 'KYC', 'Sanctions', etc.
+            actor:       Optionally restrict to 'Obliged Entity', etc.
 
         Returns:
             List of result dicts sorted by relevance score (descending).
@@ -252,6 +305,7 @@ class KnowledgeIndexBuilder:
             SELECT
                 chunk_id, source, section, subsection,
                 article_num, recital_num, chapter, legal_type,
+                topic, obligation_type, actor, jurisdiction, risk_category,
                 content,
                 embedding <-> CAST(:emb AS vector) AS distance
             FROM knowledge_chunks
@@ -265,6 +319,22 @@ class KnowledgeIndexBuilder:
         elif recital_num is not None:
             base_sql += " AND recital_num = :rec"
             params["rec"] = recital_num
+
+        if legal_type is not None:
+            base_sql += " AND legal_type = :ltype"
+            params["ltype"] = legal_type
+
+        if obligation_type is not None:
+            base_sql += " AND obligation_type = :otype"
+            params["otype"] = obligation_type
+
+        if risk_category is not None:
+            base_sql += " AND risk_category = :rcat"
+            params["rcat"] = risk_category
+
+        if actor is not None:
+            base_sql += " AND actor = :actor"
+            params["actor"] = actor
 
         base_sql += " ORDER BY distance LIMIT :limit"
 
@@ -297,6 +367,11 @@ class KnowledgeIndexBuilder:
                 "recital_num": row.recital_num,
                 "chapter":    row.chapter,
                 "legal_type": row.legal_type,
+                "topic":      row.topic,
+                "obligation_type": row.obligation_type,
+                "actor":      row.actor,
+                "jurisdiction": row.jurisdiction,
+                "risk_category": row.risk_category,
                 "content":    row.content[:600] + ("…" if len(row.content) > 600 else ""),
                 "distance":   round(distance, 4),
                 "relevance":  round(relevance, 4),
@@ -305,6 +380,35 @@ class KnowledgeIndexBuilder:
         # Sort by relevance descending, take top `limit`
         results.sort(key=lambda r: r["relevance"], reverse=True)
         return results[:limit]
+
+    def search_for_answer_type(self, query: str, answer_type: str, limit: int = 3) -> List[dict]:
+        """Retrieve deterministic (Articles) vs explanatory (Recitals) content.
+
+        Args:
+            query:       Free-text query
+            answer_type: "deterministic" (Article) or "explanatory" (Recital)
+            limit:       Number of results
+
+        Returns:
+            List of result dicts
+        """
+        if answer_type == "deterministic":
+            # For deterministic, we specifically want Articles containing obligations (SHALL/MUST)
+            return self.search(
+                query_text=query,
+                limit=limit,
+                legal_type="article",
+                obligation_type="SHALL"
+            )
+        elif answer_type == "explanatory":
+            # For explanatory, we specifically want Recitals
+            return self.search(
+                query_text=query,
+                limit=limit,
+                legal_type="recital"
+            )
+        else:
+            return self.search(query_text=query, limit=limit)
 
     def search_by_regulation(self, regulation_name: str, limit: int = 3) -> List[dict]:
         """Search specifically for a regulation reference (article or recital).
@@ -431,9 +535,6 @@ class KnowledgeIndexBuilder:
             "sources":        sources,
             "status":         "ready" if total > 0 else "empty",
         }
-
-
-import re   # needed in search_by_regulation — ensure it's in scope at module level
 
 
 def main():
