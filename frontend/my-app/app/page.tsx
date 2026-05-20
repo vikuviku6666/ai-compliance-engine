@@ -397,6 +397,10 @@ export default function Home() {
                 setIsLoading(true);
                 setLoadingStage(stage ?? "Analysing role description…");
               }}
+              onLoadingEnd={() => {
+                setIsLoading(false);
+                setLoadingStage("");
+              }}
             />
 
             <SavedPlansPanel
@@ -422,18 +426,40 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="w-full mt-4 space-y-2">
-                      {[
-                        { label: "Analysing role description",       match: "Analysing"   },
-                        { label: "Traversing governance graph",       match: "Traversing"  },
-                        { label: "Matching EU AMLR regulations",      match: "Matching"    },
-                        { label: "Building 4-quarter training plan",  match: "Building"    },
-                        { label: "Generating module descriptions",    match: "Generating"  },
-                      ].map(({ label, match }) => (
-                        <div key={label} className={`flex items-center gap-2 text-sm ${loadingStage.includes(match) ? "text-blue-600 font-medium" : "text-gray-400"}`}>
-                          <div className={`w-2 h-2 rounded-full ${loadingStage.includes(match) ? "bg-blue-600 animate-pulse" : "bg-gray-300"}`} />
-                          <span>{label}</span>
-                        </div>
-                      ))}
+                      {(loadingStage.includes("Parsing") || loadingStage.includes("extracting")) ? (
+                        [
+                          { label: "Parsing corporate document", match: "Parsing" },
+                          { label: "Extracting compliance roles & risks", match: "extracting" }
+                        ].map(({ label, match }) => (
+                          <div key={label} className={`flex items-center gap-2 text-sm ${loadingStage.includes(match) ? "text-blue-600 font-medium" : "text-gray-400"}`}>
+                            <div className={`w-2 h-2 rounded-full ${loadingStage.includes(match) ? "bg-blue-600 animate-pulse" : "bg-gray-300"}`} />
+                            <span>{label}</span>
+                          </div>
+                        ))
+                      ) : loadingStage.includes("curriculum") ? (
+                        [
+                          { label: "Initializing bulk generator", match: "Assembling" },
+                          { label: "Processing " + loadingStage.split("for ")[1], match: "curriculum" }
+                        ].map(({ label, match }) => (
+                          <div key={label} className={`flex items-center gap-2 text-sm ${loadingStage.includes(match) ? "text-blue-600 font-medium" : "text-gray-400"}`}>
+                            <div className={`w-2 h-2 rounded-full ${loadingStage.includes(match) ? "bg-blue-600 animate-pulse" : "bg-gray-300"}`} />
+                            <span>{label}</span>
+                          </div>
+                        ))
+                      ) : (
+                        [
+                          { label: "Analysing role description",       match: "Analysing"   },
+                          { label: "Traversing governance graph",       match: "Traversing"  },
+                          { label: "Matching EU AMLR regulations",      match: "Matching"    },
+                          { label: "Building 4-quarter training plan",  match: "Building"    },
+                          { label: "Generating module descriptions",    match: "Generating"  },
+                        ].map(({ label, match }) => (
+                          <div key={label} className={`flex items-center gap-2 text-sm ${loadingStage.includes(match) ? "text-blue-600 font-medium" : "text-gray-400"}`}>
+                            <div className={`w-2 h-2 rounded-full ${loadingStage.includes(match) ? "bg-blue-600 animate-pulse" : "bg-gray-300"}`} />
+                            <span>{label}</span>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>

@@ -10,6 +10,7 @@ interface Props {
   onProcessMulti?: (data: { domain: string; roles: ExtractedRole[] }) => void; // for enterprise multi-role curriculum
   isLoading: boolean;
   onLoadingStart: (stage?: string) => void;
+  onLoadingEnd: () => void;
 }
 
 export interface StructuredInput {
@@ -56,7 +57,7 @@ const getRoleColorClass = (roleName: string) => {
   return "hover:border-zinc-500 dark:hover:border-zinc-700 hover:shadow-zinc-500/10";
 };
 
-export default function InputSection({ onProcess, onProcessMulti, isLoading, onLoadingStart }: Props) {
+export default function InputSection({ onProcess, onProcessMulti, isLoading, onLoadingStart, onLoadingEnd }: Props) {
   // Modes: "select" (selection screen), "editor" (structured editing), "extract" (paste text screen)
   const [mode, setMode] = useState<"select" | "editor" | "extract">("select");
   
@@ -252,7 +253,7 @@ export default function InputSection({ onProcess, onProcessMulti, isLoading, onL
     } finally {
       setUploadBusy(false);
       // Turn off overall loading since we loaded into editor mode (or errored)
-      onLoadingStart("");
+      onLoadingEnd();
     }
   };
 
