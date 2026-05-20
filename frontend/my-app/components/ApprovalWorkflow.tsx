@@ -22,13 +22,22 @@ const REVISION_STAGES = [
   { label: "Finalising revised training plan",match: "Finalising" },
 ];
 
-export default function ApprovalWorkflow({ planId, onPlanUpdated }: Props) {
+export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [] }: Props & { modules?: any[] }) {
   const [stage, setStage]               = useState<Stage>("recommendation");
   const [notes, setNotes]               = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingStage, setLoadingStage] = useState("");
   const [showEditBox, setShowEditBox]   = useState(false);
   const [notification, setNotification] = useState<Notification | null>(null);
+
+  // Check if some but not all modules are approved
+  const approvedCount = modules.filter((m) => m.status === "approved").length;
+  const hasPartialApprovals = approvedCount > 0 && approvedCount < modules.length;
+  const approveButtonText = isProcessing 
+    ? "Approving…" 
+    : hasPartialApprovals 
+      ? "Approve Remaining & Publish" 
+      : "Approve All";
 
   // Auto-dismiss notification after 4 seconds
   useEffect(() => {
@@ -226,7 +235,7 @@ export default function ApprovalWorkflow({ planId, onPlanUpdated }: Props) {
                   onClick={handleApprove}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? "Approving…" : "Approve"}
+                  {approveButtonText}
                 </button>
                 <button
                   className="rounded-md border-2 border-primary px-6 py-2.5 text-primary font-medium hover:bg-primary/10 disabled:opacity-50 transition-colors"

@@ -75,4 +75,5 @@ class TrainingPlanModule(Base):
     risk_reference = Column(String)
     competency_reference = Column(String)
     behavioural_outcome = Column(String)
+    status = Column(String, default="draft")  # draft, approved, needs_revision
 

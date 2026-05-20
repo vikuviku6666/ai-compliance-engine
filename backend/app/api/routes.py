@@ -762,7 +762,8 @@ def workflow_run(data: dict):
                 regulation_reference=rec.get("regulation_reference") or "",
                 risk_reference=rec.get("risk_reference") or "",
                 competency_reference=rec.get("competency_reference") or "Foundational",
-                behavioural_outcome=rec.get("behavioural_outcome") or ""
+                behavioural_outcome=rec.get("behavioural_outcome") or "",
+                status="draft"
             )
             db.add(module)
             
@@ -828,13 +829,15 @@ def get_plan(plan_id: str):
             
         recommendations = [
             {
+                "id": m.id,
                 "quarter": m.quarter,
                 "module": m.module,
                 "role_reference": m.role_reference,
                 "regulation_reference": m.regulation_reference,
                 "risk_reference": m.risk_reference,
                 "competency_reference": m.competency_reference,
-                "behavioural_outcome": m.behavioural_outcome
+                "behavioural_outcome": m.behavioural_outcome,
+                "status": m.status
             }
             for m in modules
         ]
@@ -916,7 +919,8 @@ def revise_plan_endpoint(plan_id: str, data: dict):
                 regulation_reference=rec.get("regulation_reference") or "",
                 risk_reference=rec.get("risk_reference") or "",
                 competency_reference=rec.get("competency_reference") or "Foundational",
-                behavioural_outcome=rec.get("behavioural_outcome") or ""
+                behavioural_outcome=rec.get("behavioural_outcome") or "",
+                status="draft"
             )
             db.add(module)
             
@@ -991,6 +995,27 @@ def evaluate_plan_endpoint(plan_id: str):
         db.close()
 
 
+@router.patch("/training/plans/{plan_id}/modules/{module_id}")
+def update_module_status(plan_id: str, module_id: str, data: dict):
+    """Patch endpoint to update status of a specific module"""
+    db = SessionLocal()
+    try:
+        module = db.query(TrainingPlanModule).filter_by(plan_id=plan_id, id=module_id).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+            
+        if "status" in data:
+            module.status = data["status"]
+            
+        db.commit()
+        return {"status": "success", "module_id": module_id, "new_status": module.status}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error updating module status: {str(e)}")
+    finally:
+        db.close()
+
+
 @router.patch("/training/plans/{plan_id}")
 def update_plan_status(plan_id: str, data: dict):
     """Patch endpoint to update status and reviewers notes of a plan"""
@@ -1002,6 +1027,14 @@ def update_plan_status(plan_id: str, data: dict):
             
         if "status" in data:
             plan.status = data["status"]
+            
+            # If the plan is approved, approve any remaining draft modules
+            if data["status"] == "approved":
+                modules = db.query(TrainingPlanModule).filter_by(plan_id=plan_id).all()
+                for module in modules:
+                    if module.status == "draft":
+                        module.status = "approved"
+
         if "reviewer_notes" in data:
             plan.reviewer_notes = data["reviewer_notes"]
             
@@ -1010,5 +1043,28 @@ def update_plan_status(plan_id: str, data: dict):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error updating status: {str(e)}")
+    finally:
+        db.close()
+
+@router.delete("/training/plans/{plan_id}")
+def delete_plan(plan_id: str):
+    """Endpoint to completely delete a training plan and all its modules"""
+    db = SessionLocal()
+    try:
+        plan = db.query(TrainingPlan).filter_by(plan_id=plan_id).first()
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+            
+        # Delete associated modules
+        db.query(TrainingPlanModule).filter_by(plan_id=plan_id).delete()
+        
+        # Delete the plan
+        db.delete(plan)
+        
+        db.commit()
+        return {"status": "success", "message": "Plan and associated modules deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error deleting plan: {str(e)}")
     finally:
         db.close()

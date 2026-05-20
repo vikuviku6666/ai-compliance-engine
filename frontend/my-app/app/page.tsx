@@ -25,6 +25,7 @@ interface Module {
   description?: string;
   evidence?: string;
   explainabilityTrace?: Record<string, any>;
+  status?: string;
 }
 
 interface WorkflowData {
@@ -60,7 +61,7 @@ function normalise(raw: any): WorkflowData {
         m.regulation_ref?.match(/(Article|Recital)\s+\d+/i)?.[0] ??
         (m.article_num ? `Article ${m.article_num}` : "");
       return {
-        id: `m${idx}`,
+        id: m.id ?? `m${idx}`,
         title: m.module ?? m.title ?? "Module",
         roleResponsibility: m.responsibility ?? m.role_reference ?? "",
         amlrArticle: articleRef,
@@ -71,6 +72,7 @@ function normalise(raw: any): WorkflowData {
         description: m.description ?? m.behavioural_outcome ?? "",
         evidence: m.evidence ?? "",
         explainabilityTrace: m.explainability_trace ?? null,
+        status: m.status ?? "draft",
       };
     });
     return {
@@ -91,8 +93,8 @@ function normalise(raw: any): WorkflowData {
       const articleRef =
         rec.regulation_reference?.match(/(Article|Recital)\s+\d+/i)?.[0] ?? "";
       return {
-        id: `m${idx}`,
-        title: rec.module ?? "",
+        id: rec.id ?? `m${idx}`,
+        title: rec.module ?? "Module",
         roleResponsibility: rec.role_reference ?? "",
         amlrArticle: articleRef,
         riskTheme: rec.risk_reference ?? "",
@@ -100,6 +102,7 @@ function normalise(raw: any): WorkflowData {
         behaviouralOutcomes: [rec.behavioural_outcome ?? ""],
         quarter: qKey,
         description: rec.behavioural_outcome ?? "",
+        status: rec.status ?? "draft",
       };
     });
     return {
@@ -164,15 +167,33 @@ const QUARTERS = [
 
 // ─── Module row inside a quarter column ───────────────────────────────────────
 
-function ModuleRow({ mod }: { mod: Module }) {
+function ModuleRow({ mod, planId }: { mod: Module; planId: string }) {
   const [open, setOpen] = useState(false);
+  const [localStatus, setLocalStatus] = useState(mod.status || "draft");
   const t = mod.explainabilityTrace;
 
+  const handleApproveOne = async () => {
+    try {
+      setLocalStatus("approving");
+      await fetch(`http://127.0.0.1:8000/training/plans/${planId}/modules/${mod.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "approved" }),
+      });
+      setLocalStatus("approved");
+    } catch (e) {
+      console.error("Failed to approve module", e);
+      setLocalStatus("draft");
+    }
+  };
+
   return (
-    <div>
+    <div className={`relative mb-2 pb-1 ${localStatus === 'approved' ? 'bg-emerald-50/50 rounded-md -mx-1 px-1' : ''}`}>
       {/* Course name + article ref — always visible */}
-      <div className="flex items-start gap-1.5 py-1">
-        <span className="mt-1 text-[10px] text-muted-foreground shrink-0">•</span>
+      <div className="flex items-start gap-1.5 py-1 group">
+        <span className="mt-1 text-[10px] text-muted-foreground shrink-0">
+          {localStatus === "approved" ? "✅" : "•"}
+        </span>
         <div className="flex-1 min-w-0">
           <span className="text-sm leading-snug">
             {mod.title}
@@ -183,6 +204,18 @@ function ModuleRow({ mod }: { mod: Module }) {
             </span>
           )}
         </div>
+        
+        {/* Approve one action */}
+        {localStatus !== "approved" && (
+          <button
+            onClick={handleApproveOne}
+            disabled={localStatus === "approving"}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-[10px] bg-white border shadow-sm rounded flex items-center gap-1 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200"
+            title="Approve this module"
+          >
+            ✅ Approve
+          </button>
+        )}
       </div>
 
       {/* More info link */}
@@ -523,7 +556,7 @@ export default function Home() {
                       <div className="flex-1 px-4 pt-3 pb-2">
                         {mods.length > 0 ? (
                           mods.map((mod, idx) => (
-                            <ModuleRow key={idx} mod={mod} />
+                            <ModuleRow key={idx} mod={mod} planId={plan.planId} />
                           ))
                         ) : (
                           <p className="text-xs text-muted-foreground italic py-2">No modules assigned</p>
@@ -598,6 +631,7 @@ export default function Home() {
                 <ApprovalWorkflow
                   planId={plan.planId}
                   onPlanUpdated={() => loadPlan(plan.planId)}
+                  modules={plan.modules}
                 />
               )}
 
