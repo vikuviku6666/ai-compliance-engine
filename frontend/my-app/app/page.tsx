@@ -174,21 +174,6 @@ function ModuleRow({ mod, planId }: { mod: Module; planId: string }) {
   const [localStatus, setLocalStatus] = useState(mod.status || "draft");
   const t = mod.explainabilityTrace;
 
-  const handleApproveOne = async () => {
-    try {
-      setLocalStatus("approving");
-      await fetch(`http://127.0.0.1:8000/training/plans/${planId}/modules/${mod.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "approved" }),
-      });
-      setLocalStatus("approved");
-    } catch (e) {
-      console.error("Failed to approve module", e);
-      setLocalStatus("draft");
-    }
-  };
-
   return (
     <div className={`relative mb-2 pb-1 ${localStatus === 'approved' ? 'bg-emerald-50/50 rounded-md -mx-1 px-1' : ''}`}>
       {/* Course name + article ref — always visible */}
@@ -206,18 +191,6 @@ function ModuleRow({ mod, planId }: { mod: Module; planId: string }) {
             </span>
           )}
         </div>
-        
-        {/* Approve one action */}
-        {localStatus !== "approved" && (
-          <button
-            onClick={handleApproveOne}
-            disabled={localStatus === "approving"}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-[10px] bg-white border shadow-sm rounded flex items-center gap-1 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200"
-            title="Approve this module"
-          >
-            ✅ Approve
-          </button>
-        )}
       </div>
 
       {/* More info link */}
@@ -294,6 +267,7 @@ export default function Home() {
 
   // Enterprise Curriculum States
   const [curriculumPlans, setCurriculumPlans] = useState<Record<string, WorkflowData>>({});
+  const [originalCurriculumPlans, setOriginalCurriculumPlans] = useState<Record<string, WorkflowData>>({});
   const [activeRole, setActiveRole] = useState<string>("");
 
   // ── Load a saved plan by id ──────────────────────────────────────────────
@@ -376,6 +350,7 @@ export default function Home() {
       }
 
       setCurriculumPlans(generated);
+      setOriginalCurriculumPlans(generated);
       const firstRole = Object.keys(generated)[0];
       setActiveRole(firstRole);
       setPlan(generated[firstRole]);
@@ -394,6 +369,7 @@ export default function Home() {
     setPlan(null);
     setError(null);
     setCurriculumPlans({});
+    setOriginalCurriculumPlans({});
     setActiveRole("");
   };
 
@@ -562,31 +538,57 @@ export default function Home() {
                </div>
                <pre className="text-[11px] text-emerald-400/90 font-mono overflow-auto max-h-[400px] custom-scrollbar">
                  {JSON.stringify(
-                   {
-                     metadata: { 
-                        plan_id: plan.planId, 
-                        role: plan.role, 
-                        status: "approved",
-                        lms_sync_timestamp: plan.planId ? "pending_sync" : ""
-                     },
-                     role_context: { 
-                        responsibilities: plan.responsibilities, 
-                        inherent_risks: plan.risks 
-                     },
-                     curriculum: plan.modules.map(m => ({
-                        quarter: m.quarter,
-                        module: m.title,
-                        competency_level: m.competency,
-                        behavioural_outcome: m.description,
-                        governance_mapping: { 
-                            responsibility: m.roleResponsibility, 
-                            risk: m.riskTheme, 
-                            regulation: m.amlrArticle 
-                        },
-                        evidence: m.evidence,
-                        explainability_trace: m.explainabilityTrace
+                   Object.keys(originalCurriculumPlans).length > 0 
+                   ? Object.values(originalCurriculumPlans).map((p) => ({
+                       metadata: { 
+                          plan_id: p.planId, 
+                          role: p.role, 
+                          status: "approved",
+                          lms_sync_timestamp: p.planId ? "pending_sync" : ""
+                       },
+                       role_context: { 
+                          responsibilities: p.responsibilities, 
+                          inherent_risks: p.risks 
+                       },
+                       curriculum: p.modules.map((m: any) => ({
+                          quarter: m.quarter,
+                          module: m.title,
+                          competency_level: m.competency,
+                          behavioural_outcome: m.description,
+                          governance_mapping: { 
+                              responsibility: m.roleResponsibility, 
+                              risk: m.riskTheme, 
+                              regulation: m.amlrArticle 
+                          },
+                          evidence: m.evidence,
+                          explainability_trace: m.explainabilityTrace
+                       }))
                      }))
-                   }, null, 2
+                   : {
+                       metadata: { 
+                          plan_id: plan.planId, 
+                          role: plan.role, 
+                          status: "approved",
+                          lms_sync_timestamp: plan.planId ? "pending_sync" : ""
+                       },
+                       role_context: { 
+                          responsibilities: plan.responsibilities, 
+                          inherent_risks: plan.risks 
+                       },
+                       curriculum: plan.modules.map(m => ({
+                          quarter: m.quarter,
+                          module: m.title,
+                          competency_level: m.competency,
+                          behavioural_outcome: m.description,
+                          governance_mapping: { 
+                              responsibility: m.roleResponsibility, 
+                              risk: m.riskTheme, 
+                              regulation: m.amlrArticle 
+                          },
+                          evidence: m.evidence,
+                          explainability_trace: m.explainabilityTrace
+                       }))
+                     }, null, 2
                  )}
                </pre>
             </div>
