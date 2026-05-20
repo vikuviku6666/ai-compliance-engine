@@ -534,7 +534,7 @@ export default function Home() {
             )}
           </section>
 
-        ) : (plan as any).allApproved ? (
+        ) : plan && (plan as any).allApproved ? (
           /* ── Full Screen Approval Success ─────────────────────────────────── */
           <section className="flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in duration-500 w-full max-w-4xl mx-auto">
             <div className="text-8xl mb-6">🎉</div>
@@ -567,7 +567,7 @@ export default function Home() {
                         plan_id: plan.planId, 
                         role: plan.role, 
                         status: "approved",
-                        lms_sync_timestamp: new Date().toISOString()
+                        lms_sync_timestamp: plan.planId ? "pending_sync" : ""
                      },
                      role_context: { 
                         responsibilities: plan.responsibilities, 
