@@ -388,6 +388,31 @@ export default function Home() {
     setActiveRole("");
   };
 
+  const handlePlanApproved = (approvedRoles: string[]) => {
+    // Remove the approved roles from the local curriculum state
+    const newCurriculumPlans = { ...curriculumPlans };
+    approvedRoles.forEach(role => {
+      delete newCurriculumPlans[role];
+    });
+
+    setCurriculumPlans(newCurriculumPlans);
+
+    const remainingRoles = Object.keys(newCurriculumPlans);
+    
+    if (remainingRoles.length > 0) {
+      // If there are remaining plans, switch to the first available one
+      const nextRole = remainingRoles[0];
+      setActiveRole(nextRole);
+      setPlan(newCurriculumPlans[nextRole]);
+    } else {
+      // If no plans are left, show the success state
+      // We do this by keeping activeRole blank but keeping plan as a sentinel string or object, 
+      // but let's actually add a dedicated state for "all_approved"
+      setPlan({ ...plan, allApproved: true } as any);
+      setActiveRole("");
+    }
+  };
+
   // ── Derived ──────────────────────────────────────────────────────────────
   const modulesByQuarter = (qKey: "Q1" | "Q2" | "Q3" | "Q4") =>
     plan?.modules.filter((m) => m.quarter === qKey) ?? [];
@@ -500,6 +525,18 @@ export default function Home() {
             )}
           </section>
 
+        ) : (plan as any).allApproved ? (
+          /* ── Full Screen Approval Success ─────────────────────────────────── */
+          <section className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
+            <div className="text-8xl mb-6">🎉</div>
+            <h2 className="text-4xl font-bold mb-4 text-emerald-700">All Training Paths Sent to LMS!</h2>
+            <p className="text-lg text-muted-foreground max-w-lg mb-8">
+              The entire compliance curriculum has been approved successfully. All training modules have been exported and queued for your Learning Management System.
+            </p>
+            <Button size="lg" onClick={handleReset} className="font-medium px-8">
+              Generate New Paths
+            </Button>
+          </section>
         ) : (
         /* ── Plan view ────────────────────────────────────────────────────── */
           <section className="flex flex-col items-center justify-center py-8">
@@ -629,9 +666,13 @@ export default function Home() {
               {/* Approval / Edit Workflow */}
               {plan.planId && (
                 <ApprovalWorkflow
+                  key={plan.planId}
                   planId={plan.planId}
                   onPlanUpdated={() => loadPlan(plan.planId)}
                   modules={plan.modules}
+                  curriculumPlans={curriculumPlans}
+                  activeRole={activeRole}
+                  onPlanApproved={handlePlanApproved}
                 />
               )}
 

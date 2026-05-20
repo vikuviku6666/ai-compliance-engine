@@ -8,6 +8,10 @@ type Stage = "recommendation" | "review" | "edit" | "published";
 interface Props {
   planId: string;
   onPlanUpdated: () => void;
+  modules?: any[];
+  curriculumPlans?: Record<string, any>;
+  activeRole?: string;
+  onPlanApproved?: (approvedRoles: string[]) => void;
 }
 
 interface Notification {
@@ -22,22 +26,16 @@ const REVISION_STAGES = [
   { label: "Finalising revised training plan",match: "Finalising" },
 ];
 
-export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [] }: Props & { modules?: any[] }) {
+export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [], curriculumPlans = {}, activeRole = "", onPlanApproved }: Props) {
   const [stage, setStage]               = useState<Stage>("recommendation");
   const [notes, setNotes]               = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isApprovingOne, setIsApprovingOne] = useState(false);
+  const [isApprovingAll, setIsApprovingAll] = useState(false);
+  const [isRevising, setIsRevising] = useState(false);
+  const isProcessing = isApprovingOne || isApprovingAll || isRevising;
   const [loadingStage, setLoadingStage] = useState("");
   const [showEditBox, setShowEditBox]   = useState(false);
   const [notification, setNotification] = useState<Notification | null>(null);
-
-  // Check if some but not all modules are approved
-  const approvedCount = modules.filter((m) => m.status === "approved").length;
-  const hasPartialApprovals = approvedCount > 0 && approvedCount < modules.length;
-  const approveButtonText = isProcessing 
-    ? "Approving…" 
-    : hasPartialApprovals 
-      ? "Approve Remaining & Publish" 
-      : "Approve All";
 
   // Auto-dismiss notification after 4 seconds
   useEffect(() => {
@@ -60,7 +58,7 @@ export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [] }
       return;
     }
 
-    setIsProcessing(true);
+    setIsRevising(true);
     setLoadingStage("Analysing your feedback");
     setNotification(null);
 
@@ -77,7 +75,7 @@ export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [] }
       });
       stageTimers.forEach(clearTimeout);
       setLoadingStage("");
-      setIsProcessing(false);
+      setIsRevising(false);
       notify("success", "Training plan revised successfully!");
       setNotes("");
       setShowEditBox(false);
@@ -86,7 +84,7 @@ export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [] }
     } catch (err: any) {
       stageTimers.forEach(clearTimeout);
       setLoadingStage("");
-      setIsProcessing(false);
+      setIsRevising(false);
       notify(
         "error",
         "Error revising plan: " + (err.response?.data?.detail || err.message)
@@ -95,22 +93,51 @@ export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [] }
   };
 
   const handleApprove = async () => {
-    setIsProcessing(true);
+    setIsApprovingOne(true);
     setNotification(null);
     try {
       await axios.patch(`http://127.0.0.1:8000/training/plans/${planId}`, {
         status: "approved",
         reviewer_notes: "Approved",
       });
-      notify("success", "Plan approved and queued for LMS export!");
-      setStage("published");
+      // Skip local setStage, instantly notify the parent
+      if (onPlanApproved) {
+        onPlanApproved([activeRole || "unknown"]);
+      }
     } catch (err: any) {
       notify(
         "error",
         "Error approving plan: " + (err.response?.data?.detail || err.message)
       );
-    } finally {
-      setIsProcessing(false);
+      setIsApprovingOne(false);
+    }
+  };
+
+  const handleApproveAllCurriculum = async () => {
+    setIsApprovingAll(true);
+    setNotification(null);
+    try {
+      const planIds = Object.values(curriculumPlans).map((p: any) => p.planId).filter(Boolean);
+      const roles = Object.keys(curriculumPlans);
+      
+      await Promise.all(
+        planIds.map(id => 
+          axios.patch(`http://127.0.0.1:8000/training/plans/${id}`, {
+            status: "approved",
+            reviewer_notes: "Approved (Bulk Curriculum)",
+          })
+        )
+      );
+
+      if (onPlanApproved) {
+        onPlanApproved(roles);
+      }
+    } catch (err: any) {
+      notify(
+        "error",
+        "Error approving curriculum: " + (err.response?.data?.detail || err.message)
+      );
+      setIsApprovingAll(false);
     }
   };
 
@@ -198,7 +225,7 @@ export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [] }
         </div>
       )}
 
-      {stage === "published" ? (
+      {stage === "published" && !onPlanApproved ? (
         <div className="text-center py-8 space-y-2">
           <div className="text-5xl mb-3">🎉</div>
           <div className="text-emerald-700 font-semibold text-xl">
@@ -230,13 +257,35 @@ export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [] }
           <div className="flex gap-3 justify-center">
             {!showEditBox ? (
               <>
-                <button
-                  className="rounded-md bg-primary px-6 py-2.5 text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                  onClick={handleApprove}
-                  disabled={isProcessing}
-                >
-                  {approveButtonText}
-                </button>
+                {Object.keys(curriculumPlans).length > 1 ? (
+                  // Bulk Curriculum Approval UI
+                  <div className="flex gap-2 bg-primary/5 p-1 rounded-lg border border-primary/20">
+                    <button
+                      className="rounded-md bg-white border border-primary/20 px-4 py-2.5 text-primary font-medium hover:bg-primary/5 disabled:opacity-50 transition-colors shadow-sm"
+                      onClick={handleApprove}
+                      disabled={isProcessing}
+                    >
+                      {isApprovingOne ? "Approving…" : "Approve"}
+                    </button>
+                    <button
+                      className="rounded-md bg-primary px-6 py-2.5 text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
+                      onClick={handleApproveAllCurriculum}
+                      disabled={isProcessing}
+                    >
+                      {isApprovingAll ? "Approving…" : "Approve All"}
+                    </button>
+                  </div>
+                ) : (
+                  // Single Plan Approval UI
+                  <button
+                    className="rounded-md bg-primary px-6 py-2.5 text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    onClick={handleApprove}
+                    disabled={isProcessing}
+                  >
+                    {isApprovingOne ? "Approving…" : "Approve"}
+                  </button>
+                )}
+
                 <button
                   className="rounded-md border-2 border-primary px-6 py-2.5 text-primary font-medium hover:bg-primary/10 disabled:opacity-50 transition-colors"
                   onClick={handleEdit}
@@ -252,7 +301,7 @@ export default function ApprovalWorkflow({ planId, onPlanUpdated, modules = [] }
                   onClick={handleRevise}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? "Revising…" : "Submit Changes"}
+                  {isRevising ? "Revising…" : "Submit Changes"}
                 </button>
                 <button
                   className="rounded-md border px-6 py-2.5 font-medium hover:bg-muted disabled:opacity-50 transition-colors"
