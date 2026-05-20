@@ -277,6 +277,12 @@ export default function Home() {
     try {
       const { role, responsibilities, inherent_risks, domain } = data.payload;
 
+      if (!role) {
+        setIsLoading(false);
+        setLoadingStage("");
+        return;
+      }
+
       setTimeout(() => setLoadingStage("Matching EU AMLR regulations…"),    2000);
       setTimeout(() => setLoadingStage("Building 4-quarter training plan…"), 6000);
       setTimeout(() => setLoadingStage("Generating module descriptions…"),   12000);
