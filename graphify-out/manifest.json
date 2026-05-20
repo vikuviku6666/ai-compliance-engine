@@ -1,0 +1,297 @@
+{
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/postcss.config.mjs": {
+    "mtime": 1778921487.6066694,
+    "ast_hash": "239f3ebf717465dc636818a1a619398d",
+    "semantic_hash": "239f3ebf717465dc636818a1a619398d"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/next.config.js": {
+    "mtime": 1779222551.231784,
+    "ast_hash": "110b96245e2ae31b8602346c86ad5cdd",
+    "semantic_hash": "110b96245e2ae31b8602346c86ad5cdd"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/next-env.d.ts": {
+    "mtime": 1778926912.1718225,
+    "ast_hash": "b5ed9dd8b4c5ba8e5ab8e6a379c15838",
+    "semantic_hash": "b5ed9dd8b4c5ba8e5ab8e6a379c15838"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/package.json": {
+    "mtime": 1778925732.5898902,
+    "ast_hash": "f45ec235236ac3a59d7f6f8fa0cee736",
+    "semantic_hash": "f45ec235236ac3a59d7f6f8fa0cee736"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/components.json": {
+    "mtime": 1778921868.6272504,
+    "ast_hash": "a0238eb4ceb9341a82b6e3640ca96743",
+    "semantic_hash": "a0238eb4ceb9341a82b6e3640ca96743"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/tsconfig.json": {
+    "mtime": 1778926912.171139,
+    "ast_hash": "48aa7b9610abec84fae07ac52388bb2b",
+    "semantic_hash": "48aa7b9610abec84fae07ac52388bb2b"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/eslint.config.mjs": {
+    "mtime": 1778921487.6063643,
+    "ast_hash": "dfa1f5f6a7037bf39dc510f30b180002",
+    "semantic_hash": "dfa1f5f6a7037bf39dc510f30b180002"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/app/layout.tsx": {
+    "mtime": 1778927042.0316608,
+    "ast_hash": "930288a9416d669c0132a2de6744772c",
+    "semantic_hash": "930288a9416d669c0132a2de6744772c"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/app/page.tsx": {
+    "mtime": 1779223712.1330934,
+    "ast_hash": "5013fdb5d41abb49bbfdd7fda1def890",
+    "semantic_hash": "5013fdb5d41abb49bbfdd7fda1def890"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/components/SavedPlansPanel.tsx": {
+    "mtime": 1779038345.9644573,
+    "ast_hash": "d6e20d3c01a1e31f60364dcda6c18da5",
+    "semantic_hash": "d6e20d3c01a1e31f60364dcda6c18da5"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/components/ApprovalWorkflow.tsx": {
+    "mtime": 1779218374.3453894,
+    "ast_hash": "5d06831601c32ecbbe83567ffe916262",
+    "semantic_hash": "5d06831601c32ecbbe83567ffe916262"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/components/PlanScorecard.tsx": {
+    "mtime": 1779221167.72016,
+    "ast_hash": "2713a663ea92704312a2edec35871e0c",
+    "semantic_hash": "2713a663ea92704312a2edec35871e0c"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/components/Upload.tsx": {
+    "mtime": 1779222703.6211548,
+    "ast_hash": "d01ea477e68683a5f9e02091253a9bcd",
+    "semantic_hash": "d01ea477e68683a5f9e02091253a9bcd"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/components/ui/button.tsx": {
+    "mtime": 1778921873.8509126,
+    "ast_hash": "daafd007acc8e344a1c557ae9287fe14",
+    "semantic_hash": "daafd007acc8e344a1c557ae9287fe14"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/lib/utils.ts": {
+    "mtime": 1778921873.878226,
+    "ast_hash": "5a6fd53fdcf2be529e9cc0b718fde352",
+    "semantic_hash": "5a6fd53fdcf2be529e9cc0b718fde352"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/__init__.py": {
+    "mtime": 1779199580.4179633,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/__init__.py": {
+    "mtime": 1779199580.4221075,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/main.py": {
+    "mtime": 1779222385.085251,
+    "ast_hash": "3a650c4a13ae26e531f0d79979943c32",
+    "semantic_hash": "3a650c4a13ae26e531f0d79979943c32"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/init_db.py": {
+    "mtime": 1779200614.3556798,
+    "ast_hash": "6c6c755db2ca9e8f29a5515b519c4b52",
+    "semantic_hash": "6c6c755db2ca9e8f29a5515b519c4b52"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/graph/seed_graph.py": {
+    "mtime": 1779218929.7561393,
+    "ast_hash": "2a94e2eb3ba02b61e49492a1c0098a63",
+    "semantic_hash": "2a94e2eb3ba02b61e49492a1c0098a63"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/graph/__init__.py": {
+    "mtime": 1779199580.4399807,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/graph/neo4j_client.py": {
+    "mtime": 1779213917.5898135,
+    "ast_hash": "f2775c4b6213872fb9515ae5026afd95",
+    "semantic_hash": "f2775c4b6213872fb9515ae5026afd95"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/models/models.py": {
+    "mtime": 1779211501.0126948,
+    "ast_hash": "4f4b8f825ac557129338eea22324f440",
+    "semantic_hash": "4f4b8f825ac557129338eea22324f440"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/models/__init__.py": {
+    "mtime": 1779199580.4336584,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/rag/llm_content.py": {
+    "mtime": 1779216875.228664,
+    "ast_hash": "30f9ee113e1684194484b69f966e386a",
+    "semantic_hash": "30f9ee113e1684194484b69f966e386a"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/rag/knowledge_index.py": {
+    "mtime": 1779216257.3273947,
+    "ast_hash": "196d964fbf8fe141f42379e6d851f962",
+    "semantic_hash": "196d964fbf8fe141f42379e6d851f962"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/rag/__init__.py": {
+    "mtime": 1779199580.4421563,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/rag/embedder.py": {
+    "mtime": 1779216069.4269285,
+    "ast_hash": "bfdbdf5aab2dac97f56fd4c21e3b772d",
+    "semantic_hash": "bfdbdf5aab2dac97f56fd4c21e3b772d"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/rag/document_parser.py": {
+    "mtime": 1779216196.031696,
+    "ast_hash": "66499b7b4520ed7c8e60d8735d4f250a",
+    "semantic_hash": "66499b7b4520ed7c8e60d8735d4f250a"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/db/database.py": {
+    "mtime": 1779213910.8579478,
+    "ast_hash": "cc5d9fd54c4b3f7a2f78d36a988741eb",
+    "semantic_hash": "cc5d9fd54c4b3f7a2f78d36a988741eb"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/db/__init__.py": {
+    "mtime": 1779199580.4367511,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/api/__init__.py": {
+    "mtime": 1779199580.4261076,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/api/routes.py": {
+    "mtime": 1779222371.6405933,
+    "ast_hash": "3f32765baf6062a7c01e280bc53d8e3c",
+    "semantic_hash": "3f32765baf6062a7c01e280bc53d8e3c"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/services/roadmap_service.py": {
+    "mtime": 1779216283.8144488,
+    "ast_hash": "abb9d9d9d52f19683d215d3d95fd6594",
+    "semantic_hash": "abb9d9d9d52f19683d215d3d95fd6594"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/services/compliance_engine.py": {
+    "mtime": 1779224085.995814,
+    "ast_hash": "25fe1cc8bce75cef3a2bb860c9cbf243",
+    "semantic_hash": "25fe1cc8bce75cef3a2bb860c9cbf243"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/services/validators.py": {
+    "mtime": 1779215455.5665293,
+    "ast_hash": "0355c502280818fcd390686ca37f370e",
+    "semantic_hash": "0355c502280818fcd390686ca37f370e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/services/simulation_service.py": {
+    "mtime": 1779215507.8275814,
+    "ast_hash": "c1e9c8dea0f90e0cc503bb38e0693c18",
+    "semantic_hash": "c1e9c8dea0f90e0cc503bb38e0693c18"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/services/__init__.py": {
+    "mtime": 1779199580.42951,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/services/llm_service.py": {
+    "mtime": 1779215439.545875,
+    "ast_hash": "ef60abb61858df1d97f4997d485640e4",
+    "semantic_hash": "ef60abb61858df1d97f4997d485640e4"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/services/generator.py": {
+    "mtime": 1779222282.1600785,
+    "ast_hash": "c4017cddb92ee3a4764374a61b9ee887",
+    "semantic_hash": "c4017cddb92ee3a4764374a61b9ee887"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/app/services/quiz_service.py": {
+    "mtime": 1779215497.736215,
+    "ast_hash": "2104a45090db252c81a41f3262655d80",
+    "semantic_hash": "2104a45090db252c81a41f3262655d80"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/tests/test_env.py": {
+    "mtime": 1779200614.3557148,
+    "ast_hash": "14cbcb07483a95de40a41534bb9c358c",
+    "semantic_hash": "14cbcb07483a95de40a41534bb9c358c"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/tests/test_workflow.py": {
+    "mtime": 1779211547.5813632,
+    "ast_hash": "6c5843ffb74f15696fb113bc3fd70b74",
+    "semantic_hash": "6c5843ffb74f15696fb113bc3fd70b74"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/tests/test_api.py": {
+    "mtime": 1779200720.9082985,
+    "ast_hash": "d95adf57e7b4ceb761e0e99f94aca5a4",
+    "semantic_hash": "d95adf57e7b4ceb761e0e99f94aca5a4"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/tests/test_compliance.py": {
+    "mtime": 1779214034.407856,
+    "ast_hash": "81bda2ee9fa423dc230b05a477af29d3",
+    "semantic_hash": "81bda2ee9fa423dc230b05a477af29d3"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/tests/test_neo4j.py": {
+    "mtime": 1779200614.3557255,
+    "ast_hash": "2ee0c256955a3fdbc982d6ef8c3413e1",
+    "semantic_hash": "2ee0c256955a3fdbc982d6ef8c3413e1"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/tests/test_postgres.py": {
+    "mtime": 1779200614.35568,
+    "ast_hash": "07364775aca94e4b5a9a3fc203f59fa6",
+    "semantic_hash": "07364775aca94e4b5a9a3fc203f59fa6"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/ARCHITECTURE.md": {
+    "mtime": 1779220031.2845821,
+    "ast_hash": "5405d68d36b934f215c3f5cd0e587d86",
+    "semantic_hash": "5405d68d36b934f215c3f5cd0e587d86"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/docker-compose.yml": {
+    "mtime": 1779198413.4039838,
+    "ast_hash": "4217ebfdbfa820ad2a389165ffec54e5",
+    "semantic_hash": "4217ebfdbfa820ad2a389165ffec54e5"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/README.md": {
+    "mtime": 1778921487.6063619,
+    "ast_hash": "f15aaa42d5d299d091b1171097ea56ad",
+    "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/AGENTS.md": {
+    "mtime": 1778921508.154486,
+    "ast_hash": "9e09241799026ac05be315a2f0b50055",
+    "semantic_hash": "9e09241799026ac05be315a2f0b50055"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/CLAUDE.md": {
+    "mtime": 1778921508.1545618,
+    "ast_hash": "5c27369b226fcf2be8a6cfe52224e767",
+    "semantic_hash": "5c27369b226fcf2be8a6cfe52224e767"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/Vidda Solutions Learning Program Generation - Hackathon Information for developers.pdf": {
+    "mtime": 1778683447.8940992,
+    "ast_hash": "eb2cbdf59d632011c9681af54b1665dc",
+    "semantic_hash": "eb2cbdf59d632011c9681af54b1665dc"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/backend/data/documents/compliance/eu_amlr_1624.pdf": {
+    "mtime": 1779208596.5986583,
+    "ast_hash": "45083a55dc3aa24b54bc05462cedfcd2",
+    "semantic_hash": "45083a55dc3aa24b54bc05462cedfcd2"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/public/file.svg": {
+    "mtime": 1778921487.6069412,
+    "ast_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71",
+    "semantic_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/public/vercel.svg": {
+    "mtime": 1778921487.6074638,
+    "ast_hash": "c0af2f507b369b085b35ef4bbe3bcf1e",
+    "semantic_hash": "c0af2f507b369b085b35ef4bbe3bcf1e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/public/next.svg": {
+    "mtime": 1778921487.607981,
+    "ast_hash": "8e061864f388b47f33a1c3780831193e",
+    "semantic_hash": "8e061864f388b47f33a1c3780831193e"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/public/globe.svg": {
+    "mtime": 1778921487.607342,
+    "ast_hash": "2aaafa6a49b6563925fe440891e32717",
+    "semantic_hash": "2aaafa6a49b6563925fe440891e32717"
+  },
+  "/Users/viku/Dev_Projects/vidda-2/ai-compliance-engine/frontend/my-app/public/window.svg": {
+    "mtime": 1778921487.6074035,
+    "ast_hash": "a2760511c65806022ad20adf74370ff3",
+    "semantic_hash": "a2760511c65806022ad20adf74370ff3"
+  }
+}

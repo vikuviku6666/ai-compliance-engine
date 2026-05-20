@@ -1,0 +1,1 @@
+{"nodes": [{"id": "public_window_logo", "label": "Window Icon", "file_type": "image", "source_file": "frontend/my-app/public/window.svg", "metadata": {"description": "Window vector icon SVG asset used in the frontend application.", "type": "svg"}}], "edges": [], "hyperedges": []}

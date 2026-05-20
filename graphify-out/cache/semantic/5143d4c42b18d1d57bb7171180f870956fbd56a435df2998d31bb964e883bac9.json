@@ -1,0 +1,1 @@
+{"nodes": [{"id": "frontend_myapp_eslint_config_config", "label": "ESLint Config", "file_type": "code", "source_file": "frontend/my-app/eslint.config.mjs", "metadata": {"description": "ESLint flat configuration module extending Next.js core web vitals and TypeScript standards while adjusting file ignore list."}}], "edges": [], "hyperedges": []}

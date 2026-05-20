@@ -1,0 +1,1 @@
+{"nodes": [{"id": "frontend_myapp_agents_rules", "label": "Next.js Agent Rules", "file_type": "document", "source_file": "frontend/my-app/AGENTS.md", "metadata": {"description": "Rules and guidelines for LLM agents detailing modern Next.js conventions and API structures to avoid out-of-date patterns."}}], "edges": [], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "frontend_myapp_components_config", "label": "Shadcn Components Config", "file_type": "document", "source_file": "frontend/my-app/components.json", "metadata": {"description": "Configuration file for Shadcn UI components setup, paths, style preferences, and component aliases."}}], "edges": [], "hyperedges": []}

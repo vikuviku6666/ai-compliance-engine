@@ -1,0 +1,1 @@
+{"nodes": [{"id": "frontend_myapp_tsconfig_config", "label": "TypeScript Config", "file_type": "document", "source_file": "frontend/my-app/tsconfig.json", "metadata": {"description": "Configuration settings for compiling the Next.js TypeScript application, specifying target, libraries, jsx style, and file inclusions/exclusions."}}], "edges": [], "hyperedges": []}
