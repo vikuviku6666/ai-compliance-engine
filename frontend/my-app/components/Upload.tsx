@@ -15,6 +15,7 @@ export interface StructuredInput {
   role: string;
   responsibilities: string[];
   inherent_risks: string[];
+  domain: string;
 }
 
 interface PresetRole {
@@ -64,6 +65,7 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
   const [roleName, setRoleName] = useState("");
   const [responsibilities, setResponsibilities] = useState<string[]>([]);
   const [risks, setRisks] = useState<string[]>([]);
+  const [domain, setDomain] = useState("Banking & Payments");
   
   // Add input states
   const [newResponsibility, setNewResponsibility] = useState("");
@@ -217,6 +219,7 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
         role: roleName.trim(),
         responsibilities: responsibilities.map((r) => r.trim()).filter(Boolean),
         inherent_risks: risks.map((r) => r.trim()).filter(Boolean),
+        domain: domain,
       },
     });
   };
@@ -364,16 +367,34 @@ export default function InputSection({ onProcess, isLoading, onLoadingStart }: P
         <div className="space-y-6 animate-fadeIn">
           {/* Header */}
           <div className="flex items-center justify-between border-b pb-4">
-            <div className="flex-1 min-w-0 mr-4">
-              <span className="text-[10px] font-bold text-primary uppercase tracking-wider font-mono">Job Title / Compliance Role</span>
-              <input
-                type="text"
-                value={roleName}
-                onChange={(e) => setRoleName(e.target.value)}
-                placeholder="Job Title"
-                className="w-full text-xl font-bold bg-transparent border-b border-transparent hover:border-zinc-300 focus:border-primary focus:outline-none py-0.5"
-                disabled={isBusy}
-              />
+            <div className="flex-1 min-w-0 mr-4 flex gap-4">
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wider font-mono">Job Title / Compliance Role</span>
+                <input
+                  type="text"
+                  value={roleName}
+                  onChange={(e) => setRoleName(e.target.value)}
+                  placeholder="Job Title"
+                  className="w-full text-xl font-bold bg-transparent border-b border-transparent hover:border-zinc-300 focus:border-primary focus:outline-none py-0.5"
+                  disabled={isBusy}
+                />
+              </div>
+              <div className="w-[200px] shrink-0">
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wider font-mono">Compliance Domain / Sector</span>
+                <select
+                  value={domain}
+                  onChange={(e) => setDomain(e.target.value)}
+                  className="w-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 border rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-primary mt-1"
+                  disabled={isBusy}
+                >
+                  <option value="Banking & Payments">🏦 Banking & Payments</option>
+                  <option value="Crypto & Virtual Assets">🪙 Crypto & Virtual Assets</option>
+                  <option value="FinTech & Payments">💳 FinTech & Payments</option>
+                  <option value="Wealth Management">📈 Wealth Management</option>
+                  <option value="Real Estate">🏠 Real Estate</option>
+                  <option value="Gaming & Casinos">🎰 Gaming & Casinos</option>
+                </select>
+              </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => setMode("select")} disabled={isBusy}>
               ← Back to Roles

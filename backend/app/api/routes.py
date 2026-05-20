@@ -238,6 +238,7 @@ def compliance_generate_plan(data: dict):
     role = data.get("role", "").strip()
     responsibilities = data.get("responsibilities", [])
     inherent_risks = data.get("inherent_risks", [])
+    domain = data.get("domain", "Banking & Payments").strip()
 
     if not role:
         raise HTTPException(status_code=400, detail="Missing required field: 'role'")
@@ -251,6 +252,7 @@ def compliance_generate_plan(data: dict):
             role=role,
             responsibilities=responsibilities,
             inherent_risks=inherent_risks,
+            domain=domain,
         )
 
         # Persist to database

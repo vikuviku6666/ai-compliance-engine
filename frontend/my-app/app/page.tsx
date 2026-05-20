@@ -259,7 +259,7 @@ export default function Home() {
     setLoadingStage("Traversing governance graph…");
 
     try {
-      const { role, responsibilities, inherent_risks } = data.payload;
+      const { role, responsibilities, inherent_risks, domain } = data.payload;
 
       setTimeout(() => setLoadingStage("Matching EU AMLR regulations…"),    2000);
       setTimeout(() => setLoadingStage("Building 4-quarter training plan…"), 6000);
@@ -269,6 +269,7 @@ export default function Home() {
         role,
         responsibilities,
         inherent_risks,
+        domain,
       });
 
       setPlan(normalise(planRes.data));

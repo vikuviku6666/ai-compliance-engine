@@ -284,6 +284,7 @@ def generate_module_name(
     risk: str,
     control: str,
     regulation_ref: str,
+    domain: str = "Banking & Payments",
 ) -> str:
     """Generate a professional, human-readable training module name using LLM.
 
@@ -295,6 +296,7 @@ def generate_module_name(
     prompt = f"""
     Generate a concise, professional training module name (4-8 words) for the following compliance context.
 
+    Compliance Domain / Sector: {domain}
     Role:           {role}
     Responsibility: {responsibility}
     Risk:           {risk}
@@ -304,19 +306,20 @@ def generate_module_name(
     Rules:
     - Return ONLY the module name — no article reference, no quotes, no punctuation at the end
     - It should sound like a real professional training course title
-    - It must reflect the specific risk and control (not generic)
+    - It must reflect the specific risk and control (not generic) and be relevant to the {domain} sector
     - Examples of good names:
         "Customer Due Diligence for High-Risk Onboarding"
         "Suspicious Activity Reporting Obligations"
         "Beneficial Ownership Verification Fundamentals"
         "PEP Screening and Enhanced Scrutiny"
         "Sanctions Evasion Risk and Controls"
+    - If the domain is Crypto/Virtual Assets, use crypto-specific context (e.g. "Crypto Wallet Identity Checks" instead of general "CDD").
     - Do NOT include article numbers in the name
     """
     try:
         name = governed_llm_call(prompt).strip().strip('"').strip("'").rstrip(".")
-        # Sanity check — must be between 3 and 10 words
-        if 3 <= len(name.split()) <= 10:
+        # Sanity check — must be between 3 and 12 words
+        if 3 <= len(name.split()) <= 12:
             return name
         # Too long or too short — fall through to fallback
     except Exception as e:
@@ -334,6 +337,7 @@ def generate_module_description(
     regulation: str,
     article_num: Optional[int],
     evidence: str,
+    domain: str = "Banking & Payments",
 ) -> str:
     """Generate a concise, audit-safe training module description.
 
@@ -344,6 +348,7 @@ def generate_module_description(
     Generate a concise 2-3 sentence training module description for the following governance context.
     Base it STRICTLY on the Legal Evidence provided. Do not add information not in the evidence.
 
+    Compliance Domain / Sector: {domain}
     Role:               {role}
     Responsibility:     {responsibility}
     Inherent Risk:      {risk}
@@ -353,8 +358,8 @@ def generate_module_description(
     Legal Evidence:
     \"\"\"{evidence}\"\"\"
 
-    Output: A professional 2-3 sentence description explaining what this training module covers
-    and why it is required by {article_ref}. Do not invent controls or regulations.
+    Output: A professional 2-3 sentence description explaining what this training module covers,
+    tailored to the {domain} sector, and why it is required by {article_ref}. Do not invent controls or regulations.
     """
     try:
         return governed_llm_call(prompt).strip()
@@ -374,8 +379,9 @@ def build_compliance_training_plan(
     role: str,
     responsibilities: List[str],
     inherent_risks: List[str],
+    domain: str = "Banking & Payments",
 ) -> Dict[str, Any]:
-    """Core engine: role + responsibilities + inherent_risks → 4-quarter training plan.
+    """Core engine: role + responsibilities + inherent_risks + domain → 4-quarter training plan.
 
     Strategy:
     1. Try Neo4j graph traversal first (deterministic governance).
@@ -433,6 +439,7 @@ def build_compliance_training_plan(
             risk=path["risk"],
             control=path["control"],
             regulation_ref=reg_ref,
+            domain=domain,
         )
 
         # Neo4j modules: use deterministic description — no extra LLM call needed
@@ -488,6 +495,7 @@ def build_compliance_training_plan(
                 risk=hit["matched_risk"],
                 control=hit["control"],
                 regulation_ref=reg_ref2,
+                domain=domain,
             )
             description = generate_module_description(
                 role=role,
@@ -497,6 +505,7 @@ def build_compliance_training_plan(
                 regulation=hit["regulation"],
                 article_num=hit["article_num"],
                 evidence=evidence,
+                domain=domain,
             )
             modules.append({
                 "_sort_key":      hit["article_num"] or 999,
@@ -541,6 +550,7 @@ def build_compliance_training_plan(
                 risk=hit["risk"],
                 control=control,
                 regulation_ref=reg_ref3,
+                domain=domain,
             )
             description = generate_module_description(
                 role=role,
@@ -550,6 +560,7 @@ def build_compliance_training_plan(
                 regulation=hit["regulation"],
                 article_num=hit["article_num"],
                 evidence=hit["evidence_snippet"],
+                domain=domain,
             )
 
             modules.append({
@@ -643,7 +654,7 @@ def build_compliance_training_plan(
     }
 
     return {
-        "role":          role,
+        "role":          f"{role} ({domain})",
         "plan":          plan,
         "roadmap":       roadmap,
         "audit_summary": audit_summary,
