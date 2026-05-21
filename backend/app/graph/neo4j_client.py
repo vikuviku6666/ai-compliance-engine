@@ -128,15 +128,14 @@ class Neo4jDriver:
         try:
             start = time.time()
             with self.session() as session:
-                result = session.run("RETURN apoc.version() as version").single()
-                version = result["version"] if result else "unknown"
+                # Use simple query that doesn't require APOC
+                result = session.run("RETURN 1 as status").single()
             elapsed = time.time() - start
 
             logger.info(f"Neo4j health check passed in {elapsed:.3f}s")
             return {
                 "status": "healthy",
                 "connected": True,
-                "version": version,
                 "response_time_ms": elapsed * 1000,
             }
         except Exception as e:
