@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(uv sync *)",
+      "Bash(uv run *)",
+      "Bash(git reset *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}

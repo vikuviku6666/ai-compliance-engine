@@ -1,6 +1,6 @@
 import json
 from typing import List, Dict, Any
-from app.graph.neo4j_client import driver
+from app.graph.neo4j_client import get_driver
 from app.db.database import SessionLocal
 from app.services.llm_service import client, MODEL, SYSTEM_MENTAL_MODEL
 from app.services.validators import validate_governance_boundaries
@@ -26,7 +26,7 @@ class RoadmapService:
             reg.name as regulation,
             training.name as training
         """
-        with driver.session() as session:
+        with get_driver().session() as session:
             result = session.run(query, role=role_name)
             return [dict(r) for r in result]
 
