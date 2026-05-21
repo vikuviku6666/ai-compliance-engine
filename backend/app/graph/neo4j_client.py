@@ -21,17 +21,14 @@ class Neo4jConfig:
         self.username = os.getenv("NEO4J_USERNAME", "").strip()
         self.password = os.getenv("NEO4J_PASSWORD", "").strip()
 
-        # Connection pool tuning
+        # These are available for future use but not passed to driver
+        # (driver doesn't support them in current version)
         self.max_pool_size = int(os.getenv("NEO4J_POOL_SIZE", "50"))
         self.connection_timeout = float(os.getenv("NEO4J_CONNECTION_TIMEOUT", "30.0"))
-        self.socket_timeout = float(os.getenv("NEO4J_SOCKET_TIMEOUT", "30.0"))
-
-        # Query execution timeout (in seconds)
         self.query_timeout = float(os.getenv("NEO4J_QUERY_TIMEOUT", "60.0"))
 
-        # SSL/TLS configuration
+        # SSL/TLS configuration (minimal support)
         self.encrypted = os.getenv("NEO4J_ENCRYPTED", "false").lower() == "true"
-        self.trust = os.getenv("NEO4J_TRUST", "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES")
 
         # Validate required config
         if not self.uri or not self.username or not self.password:
@@ -40,19 +37,12 @@ class Neo4jConfig:
             )
 
     def get_driver_kwargs(self) -> dict:
-        """Build kwargs for GraphDatabase.driver()."""
-        kwargs = {
+        """Build kwargs for GraphDatabase.driver() with supported parameters."""
+        return {
             "auth": (self.username, self.password),
-            "encrypted": self.encrypted,
+            "max_connection_pool_size": self.max_pool_size,
+            "connection_timeout": self.connection_timeout,
         }
-
-        # Add optional parameters that are supported
-        if self.max_pool_size:
-            kwargs["max_pool_size"] = self.max_pool_size
-        if self.connection_timeout:
-            kwargs["connection_timeout"] = self.connection_timeout
-
-        return kwargs
 
 
 class Neo4jDriver:
