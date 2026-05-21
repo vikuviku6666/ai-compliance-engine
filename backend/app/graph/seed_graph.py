@@ -227,6 +227,9 @@ def _create_indexes(session):
 
 def _seed_batch(session, governance_data):
     """Seed graph using UNWIND + batch MERGE (single transaction, ~50× faster)."""
+    import logging
+    logger = logging.getLogger(__name__)
+
     # Prepare data for UNWIND: extract unique nodes and relationships
     paths = [
         {
@@ -241,6 +244,7 @@ def _seed_batch(session, governance_data):
     ]
 
     # Batch 1: Create all unique nodes (UNWIND + MERGE)
+    start = time.time()
     session.run("""
         UNWIND $paths AS p
         MERGE (r:Role {name: p.role})
@@ -250,8 +254,11 @@ def _seed_batch(session, governance_data):
         MERGE (reg:Regulation {name: p.reg})
         MERGE (train:Training {name: p.train})
     """, paths=paths)
+    elapsed_nodes = time.time() - start
+    logger.info(f"Batch nodes created in {elapsed_nodes:.3f}s")
 
     # Batch 2: Create all relationships (UNWIND + MERGE)
+    start = time.time()
     session.run("""
         UNWIND $paths AS p
         MATCH (r:Role {name: p.role})
@@ -266,6 +273,8 @@ def _seed_batch(session, governance_data):
         MERGE (ctrl)-[:REQUIRED_BY]->(reg)
         MERGE (ctrl)-[:TRAINED_BY]->(train)
     """, paths=paths)
+    elapsed_rels = time.time() - start
+    logger.info(f"Batch relationships created in {elapsed_rels:.3f}s")
 
 
 def _print_summary(session):
