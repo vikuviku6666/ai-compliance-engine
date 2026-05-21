@@ -41,14 +41,18 @@ class Neo4jConfig:
 
     def get_driver_kwargs(self) -> dict:
         """Build kwargs for GraphDatabase.driver()."""
-        return {
+        kwargs = {
             "auth": (self.username, self.password),
-            "max_pool_size": self.max_pool_size,
-            "connection_timeout": self.connection_timeout,
-            "socket_timeout": self.socket_timeout,
             "encrypted": self.encrypted,
-            "trust": self.trust,
         }
+
+        # Add optional parameters that are supported
+        if self.max_pool_size:
+            kwargs["max_pool_size"] = self.max_pool_size
+        if self.connection_timeout:
+            kwargs["connection_timeout"] = self.connection_timeout
+
+        return kwargs
 
 
 class Neo4jDriver:
