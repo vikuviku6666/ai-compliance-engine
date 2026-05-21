@@ -1104,25 +1104,25 @@ def revise_plan_endpoint(plan_id: str, data: dict):
 
 @router.get("/workflow/plan/{plan_id}/evaluate")
 def evaluate_plan_endpoint(plan_id: str):
-    """Retrieve details for plan quality scorecard"""
+    """Retrieve details for plan quality scorecard with 10-dimension evaluation"""
     db = SessionLocal()
     try:
         plan = db.query(TrainingPlan).filter_by(plan_id=plan_id).first()
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
-            
+
         modules = db.query(TrainingPlanModule).filter_by(plan_id=plan_id).all()
-        
+
         try:
             responsibilities = json.loads(plan.responsibilities)
         except Exception:
             responsibilities = [plan.responsibilities] if plan.responsibilities else []
-            
+
         try:
             risks = json.loads(plan.risks)
         except Exception:
             risks = [plan.risks] if plan.risks else []
-            
+
         current_modules = [
             {
                 "quarter": m.quarter,
@@ -1135,15 +1135,19 @@ def evaluate_plan_endpoint(plan_id: str):
             }
             for m in modules
         ]
-        
+
         gen = TrainingPlanGenerator()
         evaluation = gen.evaluate_plan(plan.role, responsibilities, risks, current_modules)
-        
+
         return {
             "plan_id": plan_id,
             "role": plan.role,
-            "overall": evaluation.get("overall", 80),
-            "dimensions": evaluation.get("dimensions", [])
+            "overall": evaluation.get("overall", 0),
+            "dimensions": evaluation.get("dimensions", []),
+            "categories": evaluation.get("categories", []),
+            "strengths": evaluation.get("strengths", []),
+            "weaknesses": evaluation.get("weaknesses", []),
+            "recommendations": evaluation.get("recommendations", [])
         }
     finally:
         db.close()
