@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.db.database import SessionLocal
-from app.graph.neo4j_client import driver
+from app.graph.neo4j_client import get_driver
 from app.rag.embedder import create_embedding
 from app.services.roadmap_service import RoadmapService
 from sqlalchemy import text
@@ -32,7 +32,8 @@ def test_postgres_connection():
 def test_neo4j_connection_and_traversal():
     """Verify Neo4j driver connection and graph traversal logic for seed KYC Analyst"""
     # Check graph connection
-    with driver.session() as session:
+    neo4j_driver = get_driver()
+    with neo4j_driver.session() as session:
         res = session.run("RETURN 1").single()
         assert res[0] == 1
         
