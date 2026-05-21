@@ -20,7 +20,7 @@ export const StrengthsWeaknesses: React.FC<StrengthsWeaknessesProps> = ({
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <div className="flex items-center gap-2 mb-3">
           <CheckCircleIcon className="w-5 h-5 text-green-600" />
-          <h4 className="font-bold text-green-900">Strengths</h4>
+          <h4 className="font-bold text-green-900">Governance Validation Capabilities</h4>
         </div>
         {strengths.length > 0 ? (
           <ul className="space-y-2">
@@ -39,7 +39,7 @@ export const StrengthsWeaknesses: React.FC<StrengthsWeaknessesProps> = ({
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex items-center gap-2 mb-3">
           <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
-          <h4 className="font-bold text-red-900">Weaknesses</h4>
+          <h4 className="font-bold text-red-900">Next Enterprise Enhancements</h4>
         </div>
         {weaknesses.length > 0 ? (
           <ul className="space-y-2">

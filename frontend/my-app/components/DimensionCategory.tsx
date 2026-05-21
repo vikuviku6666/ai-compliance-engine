@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { DimensionBar } from './DimensionBar';
-import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface Dimension {
   name: string;
@@ -43,9 +43,9 @@ export const DimensionCategory: React.FC<DimensionCategoryProps> = ({
       >
         <div className="flex items-center gap-3">
           {isExpanded ? (
-            <ChevronDownIcon className="w-5 h-5 text-gray-600" />
+            <ChevronDown className="w-5 h-5 text-gray-600" />
           ) : (
-            <ChevronRightIcon className="w-5 h-5 text-gray-600" />
+            <ChevronRight className="w-5 h-5 text-gray-600" />
           )}
           <div className="text-left">
             <h3 className="font-bold text-base text-gray-800">{name}</h3>
