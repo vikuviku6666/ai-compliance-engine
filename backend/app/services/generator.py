@@ -99,8 +99,8 @@ class TrainingPlanGenerator:
             # Override risks with Neo4j governance graph data if available (Task 1.7)
             # The LLM NEVER decides risks — Neo4j is authoritative.
             try:
-                from app.graph.neo4j_client import driver
-                with driver.session() as session:
+                from app.graph.neo4j_client import get_driver
+                with get_driver().session() as session:
                     result = session.run(
                         """
                         MATCH (r:Role {name: $role})-[:HAS_RESPONSIBILITY]->(resp:Responsibility)

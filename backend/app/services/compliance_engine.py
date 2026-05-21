@@ -22,7 +22,7 @@ import json
 import re
 from typing import List, Dict, Any, Optional
 import concurrent.futures
-from app.graph.neo4j_client import driver
+from app.graph.neo4j_client import get_driver
 from app.rag.knowledge_index import KnowledgeIndexBuilder
 from app.services.llm_service import governed_llm_call
 
@@ -142,7 +142,7 @@ def get_governed_paths(role: str) -> List[Dict[str, Any]]:
         t.name     AS training
     ORDER BY reg.name
     """
-    with driver.session() as session:
+    with get_driver().session() as session:
         rows = session.run(query, role=role)
         paths = []
         for r in rows:
@@ -158,7 +158,7 @@ def get_graph_controls_for_risks(risks: List[str]) -> List[Dict[str, Any]]:
     """For each risk, find controls and regulations from Neo4j (fuzzy match)."""
     results = []
     seen = set()
-    with driver.session() as session:
+    with get_driver().session() as session:
         for risk in risks:
             rows = session.run("""
                 MATCH (risk:Risk)-[:MITIGATED_BY]->(ctrl:Control)
