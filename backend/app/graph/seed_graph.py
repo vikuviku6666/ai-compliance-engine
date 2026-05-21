@@ -6,7 +6,7 @@ Run once:  uv run python backend/app/graph/seed_graph.py
 Re-run:    same command (MERGE is idempotent)
 """
 
-from app.graph.neo4j_client import driver
+from app.graph.neo4j_client import get_driver
 
 # ─── Governance data ──────────────────────────────────────────────────────────
 # Each entry:  (role, responsibility, risk, control, regulation, training_name)
@@ -207,6 +207,7 @@ GOVERNANCE = [
 
 
 def seed():
+    driver = get_driver()
     with driver.session() as session:
         # Clear old structure nodes (keep existing test data)
         print("Seeding governance graph...")
