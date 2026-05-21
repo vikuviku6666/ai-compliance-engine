@@ -3,7 +3,7 @@ import json
 import uuid
 from datetime import datetime
 from app.db.database import SessionLocal
-from app.graph.neo4j_client import driver
+from app.graph.neo4j_client import get_driver
 from app.services.roadmap_service import RoadmapService
 from app.services.quiz_service import QuizService
 from app.services.simulation_service import SimulationService
@@ -23,7 +23,7 @@ router = APIRouter()
 @router.get("/graph/roles")
 def get_roles():
     """Return all roles with their responsibilities and risks — live from Neo4j."""
-    with driver.session() as session:
+    with get_driver().session() as session:
         result = session.run("""
             MATCH (r:Role)-[:HAS_RESPONSIBILITY]->(resp:Responsibility)
             OPTIONAL MATCH (resp)-[:INTRODUCES]->(risk:Risk)
@@ -45,7 +45,7 @@ def get_roles():
 @router.get("/graph/role/{role_name}")
 def get_role_detail(role_name: str):
     """Return full governance paths for a specific role — live from Neo4j."""
-    with driver.session() as session:
+    with get_driver().session() as session:
         result = session.run("""
             MATCH (r:Role {name: $role})
             MATCH (r)-[:HAS_RESPONSIBILITY]->(resp:Responsibility)
@@ -116,7 +116,7 @@ def suggest_risks(data: dict):
     suggestions = []
     seen = set()
 
-    with driver.session() as session:
+    with get_driver().session() as session:
         # 1. Exact match from graph
         for resp in responsibilities:
             result = session.run("""
@@ -185,7 +185,7 @@ def suggest_controls(data: dict):
 
     results = []
     seen = set()
-    with driver.session() as session:
+    with get_driver().session() as session:
         for risk in risks:
             rows = session.run("""
                 MATCH (risk:Risk)-[:MITIGATED_BY]->(ctrl:Control)
@@ -584,7 +584,7 @@ def health_check():
         
     # Verify Neo4j connection
     try:
-        with driver.session() as session:
+        with get_driver().session() as session:
             session.run("RETURN 1")
     except Exception as e:
         print(f"Health check Neo4j connection error: {e}")
@@ -699,7 +699,7 @@ def generate_quiz_endpoint(data: dict):
     RETURN DISTINCT reg.name as regulation
     """
     regulation_name = "Recital 40"
-    with driver.session() as session:
+    with get_driver().session() as session:
         res = session.run(query, training=training_name)
         record = res.single()
         if record:
@@ -743,7 +743,7 @@ def generate_simulation_endpoint(data: dict):
     regulation_name = "Recital 40"
     role_name = "KYC Analyst"
     
-    with driver.session() as session:
+    with get_driver().session() as session:
         res = session.run(query, training=training_name)
         record = res.single()
         if record:
@@ -797,7 +797,7 @@ def explainability_endpoint(role: str = None, training: str = None):
             reg.name as regulation,
             training.name as training
         """
-        with driver.session() as session:
+        with get_driver().session() as session:
             res = session.run(query, role=role)
             paths = [dict(r) for r in res]
     else:
@@ -816,7 +816,7 @@ def explainability_endpoint(role: str = None, training: str = None):
             reg.name as regulation,
             training.name as training
         """
-        with driver.session() as session:
+        with get_driver().session() as session:
             res = session.run(query, training=training)
             paths = [dict(r) for r in res]
             

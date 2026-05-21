@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from app.rag.document_parser import DocumentParser, DocumentChunk
 from app.rag.embedder import create_embedding
 from app.db.database import SessionLocal
-from app.graph.neo4j_client import driver
+from app.graph.neo4j_client import get_driver
 from sqlalchemy import text, Column, String, Integer, Float
 from sqlalchemy.dialects.postgresql import UUID
 from pgvector.sqlalchemy import Vector
@@ -200,7 +200,7 @@ class KnowledgeIndexBuilder:
     def _update_neo4j_index(self, chunks: List[DocumentChunk],
                              source_name: str, replace: bool = False):
         """Keep Neo4j in sync with article/recital nodes."""
-        with driver.session() as session:
+        with get_driver().session() as session:
             if replace:
                 session.run(
                     "MATCH (d:Document {source: $src}) DETACH DELETE d",

@@ -11,7 +11,7 @@ from app.api.routes import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Ensure database tables exist and warm up the embedding model.
+    """Ensure database tables exist, warm up the embedding model, and initialize Neo4j.
     Moves table creation and model cold-start to server boot time.
     """
     try:
@@ -33,7 +33,26 @@ async def lifespan(app: FastAPI):
         print("✓ Embedding model warmed up")
     except Exception as e:
         print(f"⚠ Warmup failed (non-fatal): {e}")
+
+    try:
+        from app.graph.neo4j_client import _driver_instance
+        _driver_instance.connect()
+        health = _driver_instance.health_check()
+        if health["connected"]:
+            print(f"✓ Neo4j connected (version: {health.get('version', 'unknown')})")
+        else:
+            print(f"⚠ Neo4j health check failed: {health.get('error', 'unknown')}")
+    except Exception as e:
+        print(f"⚠ Neo4j initialization failed (non-fatal): {e}")
+
     yield
+
+    try:
+        from app.graph.neo4j_client import close_driver
+        close_driver()
+        print("✓ Neo4j driver closed")
+    except Exception as e:
+        print(f"⚠ Neo4j shutdown error: {e}")
 
 
 app = FastAPI(lifespan=lifespan)
@@ -52,3 +71,34 @@ app.include_router(router)
 @app.get("/")
 def health():
     return {"status": "running"}
+
+
+@app.get("/health/detailed")
+def health_detailed():
+    """Detailed health check including Neo4j and PostgreSQL."""
+    from app.graph.neo4j_client import health_check as neo4j_health
+    from app.db.database import engine
+    from sqlalchemy import text
+
+    health_status = {
+        "service": "running",
+        "neo4j": neo4j_health(),
+        "postgresql": {"connected": False, "error": None},
+    }
+
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+            health_status["postgresql"] = {"connected": True}
+    except Exception as e:
+        health_status["postgresql"]["error"] = str(e)
+
+    overall_status = (
+        "healthy"
+        if health_status["neo4j"]["connected"]
+        and health_status["postgresql"]["connected"]
+        else "degraded"
+    )
+    health_status["overall"] = overall_status
+
+    return health_status
