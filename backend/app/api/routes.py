@@ -1218,7 +1218,15 @@ def delete_plan(plan_id: str):
         db.commit()
         return {"status": "success", "message": "Plan and associated modules deleted successfully"}
     except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error deleting plan: {str(e)}")
-    finally:
         db.close()
+
+
+# ==========================================
+# MONITORING & OBSERVABILITY ENDPOINTS
+# ==========================================
+
+@router.get("/graph/cache/stats")
+def get_cache_stats():
+    """Return Neo4j query cache statistics (hit rate, entries, etc)."""
+    from app.graph.cache import cache_stats
+    return {"cache": cache_stats()}
