@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from typing import Optional
 from contextlib import contextmanager
 
@@ -129,16 +130,21 @@ class Neo4jDriver:
             session.close()
 
     def health_check(self) -> dict:
-        """Check Neo4j connectivity and return status."""
+        """Check Neo4j connectivity and return status with performance metrics."""
         try:
+            start = time.time()
             with self.session() as session:
                 result = session.run("RETURN apoc.version() as version").single()
                 version = result["version"] if result else "unknown"
-                return {
-                    "status": "healthy",
-                    "connected": True,
-                    "version": version,
-                }
+            elapsed = time.time() - start
+
+            logger.info(f"Neo4j health check passed in {elapsed:.3f}s")
+            return {
+                "status": "healthy",
+                "connected": True,
+                "version": version,
+                "response_time_ms": elapsed * 1000,
+            }
         except Exception as e:
             logger.warning(f"Neo4j health check failed: {e}")
             return {
