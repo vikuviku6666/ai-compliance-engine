@@ -9,7 +9,8 @@ import SavedPlansPanel from "../components/SavedPlansPanel";
 import PlanScorecard from "../components/PlanScorecard";
 import { Button } from "../components/ui/button";
 
-const API = "http://127.0.0.1:8000";
+// Ensure NEXT_PUBLIC_API_URL is set in your deployment environment
+const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

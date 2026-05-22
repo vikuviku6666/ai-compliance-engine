@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 
-const API = "http://127.0.0.1:8000";
+// Ensure NEXT_PUBLIC_API_URL is set in your deployment environment
+const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 interface Props {
   onProcess: (data: { type: "structured"; payload: StructuredInput }) => void; // fallback
