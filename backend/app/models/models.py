@@ -79,4 +79,11 @@ class TrainingPlanModule(Base):
     explainability_trace = Column(String, nullable=True)  # JSON serialized dict
     evidence = Column(String, nullable=True)  # Added evidence text
 
+class SystemMetadata(Base):
+    __tablename__ = "system_metadata"
+    
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=False)
+    updated_at = Column(String)
+
 
