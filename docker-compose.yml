@@ -3,6 +3,8 @@ version: '3.9'
 services:
   postgres:
     image: pgvector/pgvector:pg16
+    container_name: compliance-postgres
+    restart: unless-stopped
 
     environment:
       POSTGRES_USER: postgres
@@ -15,11 +17,20 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   neo4j:
     image: neo4j:5
+    container_name: compliance-neo4j
+    restart: unless-stopped
 
     environment:
       NEO4J_AUTH: neo4j/password
+      NEO4J_PLUGINS: '["graph-data-science"]'
 
     ports:
       - '7474:7474'
@@ -28,6 +39,12 @@ services:
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
+
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:7474/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
