@@ -13,6 +13,28 @@ An enterprise-grade, deterministic AI compliance training orchestration engine. 
 * **Massive Concurrency**: A ThreadPool architecture generates parallel training paths for multiple roles simultaneously.
 * **LMS Ready**: 1-click generation and approval creates a structured JSON payload ready to be ingested by Workday, SAP Litmos, Cornerstone, etc.
 
+## 🧠 How it Works: Generating a Plan from a Role
+
+When you provide a job role and its responsibilities on the platform, the engine executes a three-phase deterministic pipeline:
+
+### 1. Extraction Phase
+*   **LLM Parsing:** Raw text (or PDF content) is sent to the backend. An LLM parses the unstructured text into a structured JSON payload containing the **Role Name**, **Responsibilities**, and implied **Inherent Risks**.
+*   **Graph Authority Override:** The system queries the Neo4j Governance Graph. If the role exists, the engine overrides the LLM-generated risks with the authoritative, pre-approved risks from the database to strictly enforce compliance standards.
+
+### 2. Compliance Engine Processing
+The validated data is passed to the core compliance engine for a multi-step orchestration:
+*   **Step A: Deterministic Graph Traversal:** The engine queries Neo4j using the role to traverse hardcoded governance paths, mapping: `Role → Responsibility → Risk → Mitigating Control → Regulation → Training Module`.
+*   **Step B: Risk Augmentation:** For custom risks not covered in the direct traversal, the graph is queried in reverse, starting from the *Risk* to find associated controls and regulations.
+*   **Step C: RAG Legal Fallback:** For risks with no graph coverage, a vector search runs against PostgreSQL. It queries a Knowledge Index of the **EU AMLR 2024/1624**. An LLM reads the exact retrieved legal articles and infers the required mitigating control.
+
+### 3. Plan Generation & Display
+With all regulatory requirements mapped, the final curriculum is assembled:
+*   **Grounded Descriptions:** An LLM generates a professional module title and description, strictly constrained by the retrieved legal evidence to ensure audit-safety.
+*   **Competency Assignment:** Controls are evaluated to assign competency levels (e.g., standard KYC is "Foundational", while SAR reporting is "Advanced").
+*   **Quarterly Roadmap:** Modules are sorted by competency and legal article number, then distributed across a 4-quarter roadmap using round-robin distribution.
+*   **Explainability Trace:** Every module saves a complete audit trail (the "Explainability Trace") to the database, proving the exact path from Role to EU AMLR Article.
+*   **UI Rendering:** The structured JSON is sent to the frontend, rendering the dashboard scorecards, the quarterly roadmap, and the explainability tooltips.
+
 ## 🏗️ Architecture
 
 Read the full deep-dive in `ARCHITECTURE.md`.
