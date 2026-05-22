@@ -1,5 +1,7 @@
 # Vidda Solutions - AI Compliance Engine
 
+**[📺 Watch the Demo Video](https://youtu.be/k3GOkezhGdk)**
+
 An enterprise-grade, deterministic AI compliance training orchestration engine. Vidda takes raw corporate job descriptions (via PDF or text), traverses a pre-mapped governance graph, searches EU AMLR regulatory vectors, and generates mathematically proven, audit-ready training paths ready for LMS export.
 
 ## 🚀 Key Features
