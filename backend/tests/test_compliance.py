@@ -32,8 +32,7 @@ def test_postgres_connection():
 def test_neo4j_connection_and_traversal():
     """Verify Neo4j driver connection and graph traversal logic for seed KYC Analyst"""
     # Check graph connection
-    neo4j_driver = get_driver()
-    with neo4j_driver.session() as session:
+    with get_driver().session() as session:
         res = session.run("RETURN 1").single()
         assert res[0] == 1
         
