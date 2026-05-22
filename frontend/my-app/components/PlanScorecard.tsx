@@ -2,13 +2,22 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { DimensionCategory } from "./DimensionCategory";
+import { StrengthsWeaknesses } from "./StrengthsWeaknesses";
 
 interface Dimension {
   name: string;
   score: number;
   message: string;
   weight: number;
-  contribution: number;   // calculated in Python, not frontend
+  contribution?: number;
+}
+
+interface Category {
+  name: string;
+  weight: number;
+  score: number;
+  dimensions: Dimension[];
 }
 
 interface Scorecard {
@@ -16,6 +25,10 @@ interface Scorecard {
   role: string;
   overall: number;
   dimensions: Dimension[];
+  categories: Category[];
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
 }
 
 interface Props {
@@ -93,6 +106,7 @@ export default function PlanScorecard({ planId }: Props) {
 
   const overall = data.overall;
   const { text: overallText, bg: overallBg } = scoreColor(overall);
+  const categories = data.categories || [];
 
   return (
     <div className="w-full rounded-xl border bg-card shadow-sm overflow-hidden">
@@ -103,7 +117,7 @@ export default function PlanScorecard({ planId }: Props) {
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">📊</span>
-          <h2 className="font-semibold text-base">Plan Quality Scorecard</h2>
+          <h2 className="font-semibold text-base">Plan Quality Scorecard (10 Dimensions)</h2>
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold border ${overallText} ${overallBg}`}>
             {scoreLabel(overall)}
           </span>
@@ -122,48 +136,47 @@ export default function PlanScorecard({ planId }: Props) {
             <p className="text-sm text-muted-foreground mt-1">Overall Quality Score</p>
           </div>
 
-          {/* Dimension bars */}
-          <div className="space-y-4">
-            {data.dimensions.map((dim) => {
-              const { bar, text } = scoreColor(dim.score);
-              // contribution comes from backend Python calculation — not computed in frontend
-              const contribution = dim.contribution ?? Math.round(dim.score * dim.weight / 100);
-              return (
-                <div key={dim.name}>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{dim.name}</span>
-                      <span className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5">
-                        weight {dim.weight}%
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        contributes {contribution}pts
-                      </span>
-                      <span className={`text-sm font-bold ${text}`}>{dim.score}/100</span>
-                    </div>
-                  </div>
-                  {/* Bar width = actual score, not weight */}
-                  <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${bar}`}
-                      style={{ width: `${dim.score}%` }}
-                    />
-                  </div>
-                  {/* Message */}
-                  <p className="text-xs text-muted-foreground mt-1">{dim.message}</p>
-                </div>
-              );
-            })}
+          {/* Category-based dimension bars with collapsible sections */}
+          <div className="space-y-3">
+            {categories.map((category) => (
+              <DimensionCategory
+                key={category.name}
+                name={category.name}
+                weight={category.weight}
+                score={category.score}
+                dimensions={category.dimensions}
+                collapsedByDefault={true}
+              />
+            ))}
           </div>
+
+          {/* Strengths & Weaknesses with Recommendations */}
+          {(data.strengths.length > 0 || data.weaknesses.length > 0 || data.recommendations.length > 0) && (
+            <StrengthsWeaknesses
+              strengths={data.strengths}
+              weaknesses={data.weaknesses}
+              recommendations={data.recommendations}
+            />
+          )}
 
           {/* Legend */}
           <div className="flex gap-4 text-xs text-muted-foreground pt-1 border-t">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> ≥85 Excellent</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> 65–84 Good</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> ≥80 Excellent</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> 65–79 Good</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" /> &lt;65 Needs work</span>
           </div>
+
+          {/* Debug: Show all dimensions flat (can be removed) */}
+          <details className="text-xs text-muted-foreground cursor-pointer">
+            <summary className="font-semibold">All Dimensions (Raw View)</summary>
+            <div className="mt-2 space-y-1 max-h-48 overflow-auto">
+              {data.dimensions.map((dim) => (
+                <div key={dim.name} className="p-1 bg-muted/20 rounded">
+                  <span className="font-mono">{dim.name}</span>: <strong>{dim.score}</strong>
+                </div>
+              ))}
+            </div>
+          </details>
         </div>
       )}
     </div>
