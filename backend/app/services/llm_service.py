@@ -7,11 +7,11 @@ from typing import Any, Optional
 load_dotenv(override=True)
 
 client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY", "").strip()
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai",
+    api_key=os.getenv("GEMINI_API_KEY", "").strip()
 )
 
-MODEL = "openai/gpt-4o-mini"
+MODEL = "gemini-2.5-flash"
 
 SYSTEM_MENTAL_MODEL = """
 You are NOT a compliance decision maker.

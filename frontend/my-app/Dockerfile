@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --legacy-peer-deps && npm cache clean --force
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -45,6 +45,6 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+    CMD wget --quiet --tries=1 --spider http://127.0.0.1:3000/ || exit 1
 
 CMD ["node", "server.js"]
